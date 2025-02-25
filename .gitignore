@@ -1,0 +1,7 @@
+#Directorys
+.vs/
+bin/
+bin-int/
+
+#Files
+*.user

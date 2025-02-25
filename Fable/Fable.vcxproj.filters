@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Fable">
+      <UniqueIdentifier>{5F93280D-CBA7-50BE-9429-F41D00FD4CEF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{2AC788B4-1694-E3BF-3FAD-D1672BD9184E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform\VulkanRendering">
+      <UniqueIdentifier>{E83C8F27-D461-DEA7-FDAC-C337E930DDC5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform\Windows">
+      <UniqueIdentifier>{64FBD71A-50F4-F66C-7926-DCF1657ED678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Fable.h" />
+    <ClInclude Include="src\Fable\Application.h">
+      <Filter>Fable</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\EntryPoint.h">
+      <Filter>Fable</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\Window.h">
+      <Filter>Fable</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanApp.h">
+      <Filter>Platform\VulkanRendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
+      <Filter>Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fbpch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Fable\Application.cpp">
+      <Filter>Fable</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanApp.cpp">
+      <Filter>Platform\VulkanRendering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
+      <Filter>Platform\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fbpch.cpp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,3 @@
+[submodule "Fable/vendor/GLFW"]
+	path = Fable/vendor/GLFW
+	url = https://github.com/TheCherno/GLFW
