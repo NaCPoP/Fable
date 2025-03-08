@@ -65,8 +65,7 @@ namespace Fable
 
 		m_Window = glfwCreateWindow(props.Width, props.Height, props.Name.c_str(), nullptr, nullptr);
 
-		m_VulkanApp = new VulkanApp();
-		m_VulkanApp->VulkanCreate();
+		m_VulkanApp->CreateVulkanApp(m_Window);
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
 			{
