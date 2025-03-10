@@ -8,6 +8,8 @@
 
 #include <limits>
 #include <optional>
+#include <fstream>
+#include <vector>
 
 namespace Fable
 {
@@ -29,6 +31,14 @@ namespace Fable
 		virtual ~VulkanApp();
 
 		static VulkanApp* CreateVulkanApp(GLFWwindow* window);
+
+		static std::vector<char> readFile(const std::string& filename);
+
+		VkShaderModule createShaderModule(const std::vector<char>& code);
+
+		void drawFrame();
+
+		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	private:
 		GLFWwindow* m_Window;
 
@@ -45,6 +55,20 @@ namespace Fable
 		std::vector<VkImage> m_SwapchainImages;
 		VkFormat m_SwapchainImageFormat;
 		VkExtent2D m_SwapchainExtent;
+
+		std::vector<VkImageView> m_SwapchainImageViews;
+		std::vector<VkFramebuffer> m_SwapchainFrameBuffer;
+
+		VkPipelineLayout m_PipelineLayout;
+		VkRenderPass m_RenderPass;
+		VkPipeline m_GraphicsPipeline;
+
+		VkCommandPool m_CommandPool;
+		VkCommandBuffer m_CommandBuffer;
+
+		VkSemaphore m_ImageAvailableSemaphore;
+		VkSemaphore m_RenderFinishedSemaphore;
+		VkFence m_InFlightFence;
 
 		virtual void Init();
 		virtual void Shutdown();
