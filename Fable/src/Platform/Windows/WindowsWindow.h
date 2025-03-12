@@ -25,7 +25,6 @@ namespace Fable
 		virtual void Shutdown();
 
 		GLFWwindow* m_Window;
-
 		VulkanApp* m_VulkanApp;
 
 		struct WindowData

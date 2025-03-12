@@ -17,7 +17,6 @@ namespace Fable
 		bool m_Running = true;
 
 		std::unique_ptr<Window> m_Window;
-		std::unique_ptr<VulkanApp> m_Vulkan;
 	};
 
 	Application* CreateApplication();

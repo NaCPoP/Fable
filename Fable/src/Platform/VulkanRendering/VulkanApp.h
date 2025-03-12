@@ -31,14 +31,7 @@ namespace Fable
 		virtual ~VulkanApp();
 
 		static VulkanApp* CreateVulkanApp(GLFWwindow* window);
-
-		static std::vector<char> readFile(const std::string& filename);
-
-		VkShaderModule createShaderModule(const std::vector<char>& code);
-
 		void drawFrame();
-
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	private:
 		GLFWwindow* m_Window;
 
@@ -49,6 +42,8 @@ namespace Fable
 		VkQueue m_GraphicsQueue;
 		VkQueue m_PresentQueue;
 		VkSurfaceKHR m_Surface;
+
+		QueueFamilyIndices m_Indices;
 
 		VkExtent2D m_ActualExtent;
 		VkSwapchainKHR m_Swapchain;
@@ -63,15 +58,38 @@ namespace Fable
 		VkRenderPass m_RenderPass;
 		VkPipeline m_GraphicsPipeline;
 
+		uint32_t m_CurrentFrame = 0;
 		VkCommandPool m_CommandPool;
-		VkCommandBuffer m_CommandBuffer;
+		std::vector<VkCommandBuffer> m_CommandBuffers;
 
-		VkSemaphore m_ImageAvailableSemaphore;
-		VkSemaphore m_RenderFinishedSemaphore;
-		VkFence m_InFlightFence;
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+		std::vector<VkFence> m_InFlightFences;
 
 		virtual void Init();
+
+		void createInstance();
+		void createSurface();
+		void pickPhysicalDevice();
+		void createLogicalDevice();
+		void createSwapchain();
+		void createImageViews();
+		void createRenderPass();
+		void createGraphicsPipeline();
+		void createFramebuffers();
+		void createCommandPool();
+		void createCommandBuffer();
+		void createSyncObjects();
+
+		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
 		virtual void Shutdown();
+
+		void recreateSwapchain();
+		void cleanUpSwapchain();
+
+		static std::vector<char> readFile(const std::string& filename);
+		VkShaderModule createShaderModule(const std::vector<char>& code);
 	};
 }
 

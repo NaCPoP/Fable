@@ -31,6 +31,7 @@ namespace Fable
 	void WindowsWindow::OnUpdate()
 	{
 		glfwPollEvents();
+		m_VulkanApp->drawFrame();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)
@@ -65,7 +66,7 @@ namespace Fable
 
 		m_Window = glfwCreateWindow(props.Width, props.Height, props.Name.c_str(), nullptr, nullptr);
 
-		//m_VulkanApp->CreateVulkanApp(m_Window);
+		m_VulkanApp = new VulkanApp(m_Window);
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
 			{
