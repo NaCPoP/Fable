@@ -1,8 +1,11 @@
 #include "fbpch.h"
 
+#include "Platform/VulkanRendering/VulkanContext.h"
+
 #include "Fable/Window.h"
 #include "WindowsWindow.h"
 
+#include "Fable/Events/ApplicationEvents.h"
 
 namespace Fable
 {
@@ -31,7 +34,8 @@ namespace Fable
 	void WindowsWindow::OnUpdate()
 	{
 		glfwPollEvents();
-		m_VulkanApp->drawFrame();
+		
+		m_Context->SwapBuffers();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)
@@ -66,20 +70,30 @@ namespace Fable
 
 		m_Window = glfwCreateWindow(props.Width, props.Height, props.Name.c_str(), nullptr, nullptr);
 
-		m_VulkanApp = new VulkanApp(m_Window);
+		m_Context = new VulkanContext(m_Window);
+		m_Context->Init();
+
+		glfwSetWindowUserPointer(m_Window, &m_Data);
+		SetVSync(true);
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
 			{
-				glfwDestroyWindow(window);
-				glfwTerminate();
+				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				WindowCloseEvent event;
+				data.EventCallback(event);
+			});
 
-				exit(1);
+		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+			{
+				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				WindowResizeEvent event(width, height);
+				data.EventCallback(event);
 			});
 	}
 
 	void WindowsWindow::Shutdown()
 	{
 		glfwDestroyWindow(m_Window);
-		glfwTerminate();
+		//glfwTerminate();
 	}
 }

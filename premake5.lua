@@ -12,11 +12,7 @@ workspace "Fable"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-VULKAN_SDK = os.getenv("VULKAN_SDK")
-print(VULKAN_SDK)
-
 include "Fable/vendor/GLFW"
-include "Fable/vendor/glad"
 
 project "Fable"
     location "Fable"
@@ -41,19 +37,18 @@ project "Fable"
     {
         "Fable/src",
         "Fable/vendor/GLFW/include",
-        "Fable/vendor/glad/include",
-        "C:/VulkanSDK/1.4.304.1/Include",
+        "Fable/vendor/glm",
+        "/home/user/VulkanSDK/1.4.304.1/Include",
     }
 
     libdirs 
     {
-		"C:/VulkanSDK/1.4.304.1/Lib"
+		"/home/user/VulkanSDK/1.4.304.1/Lib"
 	}
 
     links 
     {
         "GLFW",
-        "glad",
         "vulkan-1.lib"
     }
 
@@ -101,6 +96,7 @@ project "Sandbox"
     includedirs
     {
         "Fable/src",
+        "Fable/vendor/glm",
         "C:/VulkanSDK/1.4.304.1/Include",
     }
 

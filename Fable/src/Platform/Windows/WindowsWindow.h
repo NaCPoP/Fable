@@ -1,8 +1,9 @@
 #pragma once
+#include "../vendor/GLFW/include/GLFW/glfw3.h"
 
 #include "Fable/Window.h"
 
-#include "Platform/VulkanRendering/VulkanApp.h"
+#include "Fable/Renderer/GraphicsContext.h"
 
 namespace Fable
 {
@@ -16,22 +17,28 @@ namespace Fable
 
 		inline unsigned int GetWidth() const override { return m_Data.Width; }
 		inline unsigned int GetHeight() const override { return m_Data.Height; }
+
+		inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 		inline void SetVSync(bool enabled) override;
 		inline bool GetVSync() const override;
 	
 		inline virtual void* GetNativeWindow() const { return m_Window; }
-	private:
+
+	private: // FUNCTIONS
 		virtual void Init(const WindowProps& props);
 		virtual void Shutdown();
 
+	private: // VARIABLES
 		GLFWwindow* m_Window;
-		VulkanApp* m_VulkanApp;
+		GraphicsContext* m_Context;
 
 		struct WindowData
 		{
 			std::string Name;
 			unsigned int Width = 0, Height = 0;
 			bool VSync = true;
+
+			EventCallbackFn EventCallback;
 		};
 
 		WindowData m_Data;
