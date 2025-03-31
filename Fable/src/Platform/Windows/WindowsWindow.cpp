@@ -1,9 +1,9 @@
 #include "fbpch.h"
 
-#include "Platform/VulkanRendering/VulkanContext.h"
-
 #include "Fable/Window.h"
 #include "WindowsWindow.h"
+
+#include "Platform/VulkanRendering/VulkanContext.h"
 
 #include "Fable/Events/ApplicationEvents.h"
 

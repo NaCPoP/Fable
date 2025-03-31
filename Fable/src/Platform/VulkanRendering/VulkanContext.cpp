@@ -1,6 +1,6 @@
 #include "fbpch.h"
 #include "VulkanContext.h"
-#include "VulkanBuffer.h"
+//#include "VulkanBuffer.h"
 
 namespace Fable
 {
@@ -26,6 +26,9 @@ namespace Fable
 		m_VulkanInstance.createGraphicsPipeline();
 		m_VulkanInstance.createFramebuffers();
 		m_VulkanInstance.createCommandPool();
+		m_VulkanInstance.createTextureImage();
+		m_VulkanInstance.createTextureImageView();
+		m_VulkanInstance.createTextureSampler();
 		m_VulkanInstance.createVertexBuffer();
 		m_VulkanInstance.createIndexBuffer();
 		m_VulkanInstance.createUniformBuffers();

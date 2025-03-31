@@ -1,24 +1,22 @@
+#include "fbpch.h"
 #pragma once
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
-#include "../vendor/GLFW/include/GLFW/glfw3.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include "../vendor/GLFW/include/GLFW/glfw3native.h"
-
-#include "Fable/Renderer/GraphicsContext.h"
+#include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <set>
 #include <chrono>
-
 #include <limits>
 #include <optional>
 #include <fstream>
-#include <vector>
-#include <array>
+#include <vulkan/vulkan_core.h>
+
+#include "Fable/Renderer/GraphicsContext.h"
 
 namespace Fable
 {
@@ -43,6 +41,9 @@ namespace Fable
 		void createGraphicsPipeline();
 		void createFramebuffers();
 		void createCommandPool();
+		void createTextureImage();
+		void createTextureImageView();
+		void createTextureSampler();
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void createUniformBuffers();
@@ -69,6 +70,7 @@ namespace Fable
 		{
 			glm::vec3 pos;
 			glm::vec3 color;
+			glm::vec2 texCoord;
 
 			static VkVertexInputBindingDescription getBindingDescription()
 			{
@@ -80,9 +82,9 @@ namespace Fable
 				return bindingDescription;
 			}
 
-			static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+			static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
 			{
-				std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+				std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
 				attributeDescriptions[0].binding = 0;
 				attributeDescriptions[0].location = 0;
@@ -93,6 +95,11 @@ namespace Fable
 				attributeDescriptions[1].location = 1;
 				attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 				attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+				attributeDescriptions[2].binding = 0;
+				attributeDescriptions[2].location = 2;
+				attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+				attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
 				return attributeDescriptions;
 			}
@@ -148,10 +155,10 @@ namespace Fable
 		std::vector<void*> m_UniformBuffersMapped;
 
 		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			{{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			{{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-			{{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+			{{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+			{{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+			{{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> indices = {
@@ -163,6 +170,11 @@ namespace Fable
 
 		VkDebugUtilsMessengerEXT m_DebugMessenger;
 		std::vector<VkDescriptorSet> m_DescriptorSets;
+
+		VkImage m_TextureImage;
+		VkDeviceMemory m_TextureImageMemory;
+		VkImageView m_TextureImageView;
+		VkSampler m_TextureSampler;
 
 	private: // FUNCTIONS
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -176,6 +188,10 @@ namespace Fable
 			VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		VkCommandBuffer beginSingleTimeCommands();
+		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+		void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 		void updateUniformBuffer(uint32_t currentImage);
 
@@ -183,5 +199,10 @@ namespace Fable
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+						 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image,
+						 VkDeviceMemory &imageMemory);
+		VkImageView createImageView(VkImage image, VkFormat format);
 	};
 }

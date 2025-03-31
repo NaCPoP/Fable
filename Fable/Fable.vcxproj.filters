@@ -43,9 +43,6 @@
     <ClInclude Include="src\Fable\LayerStack.h">
       <Filter>Fable</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fable\Renderer\Buffer.h">
-      <Filter>Fable\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="src\Fable\Renderer\GraphicsContext.h">
       <Filter>Fable\Renderer</Filter>
     </ClInclude>
@@ -54,9 +51,6 @@
     </ClInclude>
     <ClInclude Include="src\Fable\Window.h">
       <Filter>Fable</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Platform\VulkanRendering\VulkanBuffer.h">
-      <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\VulkanRendering\VulkanContext.h">
       <Filter>Platform\VulkanRendering</Filter>
@@ -79,14 +73,8 @@
     <ClCompile Include="src\Fable\LayerStack.cpp">
       <Filter>Fable</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fable\Renderer\Buffer.cpp">
-      <Filter>Fable\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="src\Fable\Renderer\Renderer.cpp">
       <Filter>Fable\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Platform\VulkanRendering\VulkanBuffer.cpp">
-      <Filter>Platform\VulkanRendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanContext.cpp">
       <Filter>Platform\VulkanRendering</Filter>

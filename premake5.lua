@@ -38,12 +38,13 @@ project "Fable"
         "Fable/src",
         "Fable/vendor/GLFW/include",
         "Fable/vendor/glm",
-        "/home/user/VulkanSDK/1.4.304.1/Include",
+        "Fable/vendor/stb-image",
+        "C:/VulkanSDK/1.4.304.1/Include",
     }
 
     libdirs 
     {
-		"/home/user/VulkanSDK/1.4.304.1/Lib"
+		"C:/VulkanSDK/1.4.304.1/Lib"
 	}
 
     links 
