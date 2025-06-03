@@ -7,20 +7,33 @@ namespace Fable
 {
 	Application::Application()
 	{
+		RendererSettings settings
+		{
+
+		};
+
 		m_Window = std::unique_ptr<Window>(Window::WindowCreate());
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+
+		m_Context.reset(new VulkanContext(any_cast<GLFWwindow*>(m_Window->GetNativeWindow())));
+		m_Context->Init(settings);
+
+		m_Shader.reset(m_Shader->Create(m_Context.get()));
+		m_Shader->Load("C:/dev/Fable/Fable/src/Shaders/vert.spv", "C:/dev/Fable/Fable/src/Shaders/frag.spv");
+		m_Shader->Bind();
 	}
 
 	Application::~Application()
 	{
-
 	}
 
 	void Application::Run()
 	{
 		while (m_Running)
 		{
+			m_Context->Draw();
 			m_Window->OnUpdate();
+			m_Context->SwapBuffers();
 		}
 	}
 

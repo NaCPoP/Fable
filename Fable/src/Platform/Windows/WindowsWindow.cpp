@@ -4,6 +4,7 @@
 #include "WindowsWindow.h"
 
 #include "Platform/VulkanRendering/VulkanContext.h"
+#include "Platform/VulkanRendering/VulkanShader.h"
 
 #include "Fable/Events/ApplicationEvents.h"
 
@@ -35,7 +36,7 @@ namespace Fable
 	{
 		glfwPollEvents();
 		
-		m_Context->SwapBuffers();
+		//m_Context->SwapBuffers();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)
@@ -70,8 +71,8 @@ namespace Fable
 
 		m_Window = glfwCreateWindow(props.Width, props.Height, props.Name.c_str(), nullptr, nullptr);
 
-		m_Context = new VulkanContext(m_Window);
-		m_Context->Init();
+		//m_Context = new VulkanContext(m_Window);
+		//m_Context->Init();
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);

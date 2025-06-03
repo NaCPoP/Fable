@@ -16,6 +16,9 @@
     <Filter Include="Platform\VulkanRendering">
       <UniqueIdentifier>{E83C8F27-D461-DEA7-FDAC-C337E930DDC5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Platform\VulkanRendering\VulkanBackend">
+      <UniqueIdentifier>{D08130B3-BCD3-07A3-A5F2-44B391E3208C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Platform\Windows">
       <UniqueIdentifier>{64FBD71A-50F4-F66C-7926-DCF1657ED678}</UniqueIdentifier>
     </Filter>
@@ -46,16 +49,34 @@
     <ClInclude Include="src\Fable\Renderer\GraphicsContext.h">
       <Filter>Fable\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="src\Fable\Renderer\Renderer.h">
+    <ClInclude Include="src\Fable\Renderer\RenderAPI.h">
+      <Filter>Fable\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\Renderer\Shader.h">
       <Filter>Fable\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Fable\Window.h">
       <Filter>Fable</Filter>
     </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanBackend\VulkanInitalizers.h">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanBackend\VulkanPipelineBuilder.h">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanBackend\VulkanUtilities.h">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClInclude>
     <ClInclude Include="src\Platform\VulkanRendering\VulkanContext.h">
       <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\VulkanRendering\VulkanMain.h">
+      <Filter>Platform\VulkanRendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanShader.h">
+      <Filter>Platform\VulkanRendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\VulkanRendering\VulkanTypes.h">
       <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
@@ -73,13 +94,28 @@
     <ClCompile Include="src\Fable\LayerStack.cpp">
       <Filter>Fable</Filter>
     </ClCompile>
-    <ClCompile Include="src\Fable\Renderer\Renderer.cpp">
+    <ClCompile Include="src\Fable\Renderer\RenderAPI.cpp">
       <Filter>Fable\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fable\Renderer\Shader.cpp">
+      <Filter>Fable\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanBackend\VulkanInitalizers.cpp">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanBackend\VulkanPipelineBuilder.cpp">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanBackend\VulkanUtilities.cpp">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanContext.cpp">
       <Filter>Platform\VulkanRendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanMain.cpp">
+      <Filter>Platform\VulkanRendering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanShader.cpp">
       <Filter>Platform\VulkanRendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">

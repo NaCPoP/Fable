@@ -4,6 +4,7 @@
 #include "Fable/Window.h"
 
 #include "Fable/Renderer/GraphicsContext.h"
+#include "Fable/Renderer/Shader.h"
 
 namespace Fable
 {
@@ -22,7 +23,7 @@ namespace Fable
 		inline void SetVSync(bool enabled) override;
 		inline bool GetVSync() const override;
 	
-		inline virtual void* GetNativeWindow() const { return m_Window; }
+		inline virtual std::any GetNativeWindow() const { return m_Window; }		
 
 	private: // FUNCTIONS
 		virtual void Init(const WindowProps& props);
@@ -30,7 +31,8 @@ namespace Fable
 
 	private: // VARIABLES
 		GLFWwindow* m_Window;
-		GraphicsContext* m_Context;
+		//GraphicsContext* m_Context;
+		Shader* m_Shader;
 
 		struct WindowData
 		{

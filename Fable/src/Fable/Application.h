@@ -3,6 +3,11 @@
 #include "Events/ApplicationEvents.h"
 #include "LayerStack.h"
 
+#include "Renderer/Shader.h"
+#include "Renderer/GraphicsContext.h"
+
+#include "Platform/VulkanRendering/VulkanContext.h"
+
 //#include "Renderer/Buffer.h"
 
 #include <memory>
@@ -21,11 +26,14 @@ namespace Fable
 
 		bool m_Running = true;
 
-		std::unique_ptr<Window> m_Window;
 		LayerStack m_LayerStack;
 
 		bool OnWindowClose(WindowCloseEvent& event);
 		bool OnWindowResize(WindowResizeEvent& event);
+
+		std::unique_ptr<Window> m_Window;
+		std::unique_ptr<GraphicsContext> m_Context;
+		std::unique_ptr<Shader> m_Shader;
 	};
 
 	Application* CreateApplication();

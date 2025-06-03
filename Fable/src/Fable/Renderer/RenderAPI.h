@@ -9,7 +9,7 @@ namespace Fable
 		Vulkan = 2
 	};
 
-	class Renderer
+	class RenderAPI
 	{
 	public:
 		inline static RendererAPI GetAPI() { return s_RendererAPI; }

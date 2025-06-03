@@ -39,6 +39,7 @@ project "Fable"
         "Fable/vendor/GLFW/include",
         "Fable/vendor/glm",
         "Fable/vendor/stb-image",
+        "Fable/vendor/tiny_object_loader",
         "C:/VulkanSDK/1.4.304.1/Include",
     }
 

@@ -4,6 +4,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../vendor/stb_image/stb_image.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+// TEMP
+const std::string MODEL_PATH = "../Fable/src/Models/viking_room.obj";
+const std::string TEXTURE_PATH = "../Fable/src/Textures/viking_room.png";
+
 namespace Fable
 {
 #ifdef FB_DEBUG
@@ -123,13 +130,13 @@ namespace Fable
 			}
 		}
 
-		m_PhysicalDevice = gpus[useGPU];
+		m_VulkanDevices.physicalDevice = gpus[useGPU];
 		free(gpus);
 	}
 
 	void VulkanMain::createLogicalDevice()
 	{
-		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
+		QueueFamilyIndices indices = findQueueFamilies(m_VulkanDevices.physicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -159,11 +166,11 @@ namespace Fable
 		deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
-		VkResult err = vkCreateDevice(m_PhysicalDevice, &deviceCreateInfo, nullptr, &m_Device);
+		VkResult err = vkCreateDevice(m_VulkanDevices.physicalDevice, &deviceCreateInfo, nullptr, &m_VulkanDevices.device);
 		ThrowError(err, "Failed to create logical device");
 
-		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
+		vkGetDeviceQueue(m_VulkanDevices.device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+		vkGetDeviceQueue(m_VulkanDevices.device, indices.presentFamily.value(), 0, &m_PresentQueue);
 	}
 
 	void VulkanMain::createImageViews()
@@ -172,12 +179,26 @@ namespace Fable
 
 		for (size_t i = 0; i < m_SwapchainImages.size(); i++)
 		{
-			m_SwapchainImageViews[i] = createImageView(m_SwapchainImages[i], m_SwapchainImageFormat);
+			m_SwapchainImageViews[i] = createImageView(m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
 	void VulkanMain::createRenderPass()
 	{
+		VkAttachmentDescription depthAttachment{};
+		depthAttachment.format = findDepthFormat();
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthAttechmentRef{};
+		depthAttechmentRef.attachment = 1;
+		depthAttechmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 		// Render Pass
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = m_SwapchainImageFormat;
@@ -197,25 +218,27 @@ namespace Fable
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pDepthStencilAttachment = &depthAttechmentRef;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		renderPassInfo.pAttachments = attachments.data();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VkResult err = vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_RenderPass);
+		VkResult err = vkCreateRenderPass(m_VulkanDevices.device, &renderPassInfo, nullptr, &m_RenderPass);
 		ThrowError(err, "Failed to create render pass!");
 	}
 
@@ -242,41 +265,39 @@ namespace Fable
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		VkResult err = vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_DescriptorSetLayout);
+		VkResult err = vkCreateDescriptorSetLayout(m_VulkanDevices.device, &layoutInfo, nullptr, &m_DescriptorSetLayout);
 		ThrowError(err, "Failed to create descriptor set layout!");
 	}
 
 	void VulkanMain::createGraphicsPipeline()
 	{
-		// PIPELINE
-		// Shader Modules
-		auto vertShaderCode = readFile("C:/dev/Fable/Fable/src/Shaders/vert.spv");
-		auto fragShaderCode = readFile("C:/dev/Fable/Fable/src/Shaders/frag.spv");
+		//auto vertShaderCode = readFile(vertexSrc);
+		//auto fragShaderCode = readFile(fragmentSrc);
 
-		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+		//VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+		//VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
+		//vertShaderStageInfo.module = vertShaderModule;
 		vertShaderStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
+		//fragShaderStageInfo.module = fragShaderModule;
 		fragShaderStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+		auto bindingDescription = VulkanMain::Vertex::getBindingDescription();
+		auto attributeDescriptions = VulkanMain::Vertex::getAttributeDescriptions();
 
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
+		attributeDescriptions[1].offset = offsetof(VulkanMain::Vertex, color);
 
 		// Dynamic State
 		std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -294,11 +315,6 @@ namespace Fable
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-		// Input Assembly
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 		// Viewports and Scissors
 		VkPipelineViewportStateCreateInfo viewportState{};
@@ -330,6 +346,18 @@ namespace Fable
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
 
+		VkPipelineDepthStencilStateCreateInfo depthStencil{};
+		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencil.depthTestEnable = VK_TRUE;
+		depthStencil.depthWriteEnable = VK_TRUE;
+		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.minDepthBounds = 0.0f;
+		depthStencil.maxDepthBounds = 1.0f;
+		depthStencil.stencilTestEnable = VK_FALSE;
+		depthStencil.front = {};
+		depthStencil.back = {};
+
 		// Color blending
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -358,32 +386,32 @@ namespace Fable
 		pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
 		//pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-		VkResult err = vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
-		ThrowError(err, "Failed to create pipeline layout!");
+		VkResult err = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout);
+		//ThrowError(err, "Failed to create pipeline layout!");
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
+		pipelineInfo.stageCount = sizeof(shaderStages) / sizeof(shaderStages[0]);
 		pipelineInfo.pStages = shaderStages;
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		//pipelineInfo.pInputAssemblyState = &inputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
 		pipelineInfo.pRasterizationState = &rasterizer;
 		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = nullptr;
+		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicStateInfo;
-		pipelineInfo.layout = m_PipelineLayout;
-		pipelineInfo.renderPass = m_RenderPass;
+		//pipelineInfo.layout = instance.m_PipelineLayout;
+		//pipelineInfo.renderPass = instance.m_RenderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		err = vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline);
-		ThrowError(err, "Failed to create graphics pipeline!");
+		//err = vkCreateGraphicsPipelines(instance.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline);
+		//ThrowError(err, "Failed to create graphics pipeline!");
 
-		vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
-		vkDestroyShaderModule(m_Device, fragShaderModule, nullptr);
+		//vkDestroyShaderModule(instance.device, vertShaderModule, nullptr);
+		//vkDestroyShaderModule(instance.device, fragShaderModule, nullptr);
 	}
 
 	void VulkanMain::createFramebuffers()
@@ -392,18 +420,18 @@ namespace Fable
 		m_SwapchainFrameBuffer.resize(m_SwapchainImageViews.size());
 		for (size_t i = 0; i < m_SwapchainImageViews.size(); i++)
 		{
-			VkImageView attachments[] = { m_SwapchainImageViews[i] };
+			std::array<VkImageView, 2> attachments = { m_SwapchainImageViews[i] , m_DepthImageView};
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			framebufferInfo.renderPass = m_RenderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = m_SwapchainExtent.width;
 			framebufferInfo.height = m_SwapchainExtent.height;
 			framebufferInfo.layers = 1;
 
-			VkResult err = vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapchainFrameBuffer[i]);
+			VkResult err = vkCreateFramebuffer(m_VulkanDevices.device, &framebufferInfo, nullptr, &m_SwapchainFrameBuffer[i]);
 			ThrowError(err, "Failed to create frambuffer!");
 		}
 	}
@@ -411,20 +439,32 @@ namespace Fable
 	void VulkanMain::createCommandPool()
 	{
 		// Command Pool
-		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
+		QueueFamilyIndices indices = findQueueFamilies(m_VulkanDevices.physicalDevice);
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		poolInfo.queueFamilyIndex = indices.graphicsFamily.value();
 
-		VkResult err = vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool);
+		VkResult err = vkCreateCommandPool(m_VulkanDevices.device, &poolInfo, nullptr, &m_CommandPool);
 		ThrowError(err, "Failed to create command pool!");
+	}
+
+	void VulkanMain::createDepthResources()
+	{
+		VkFormat depthFormat = findDepthFormat();
+
+		createImage(m_SwapchainExtent.width, m_SwapchainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImage,
+					m_DepthImageMemory);
+		m_DepthImageView = createImageView(m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+		//transitionImageLayout(m_DepthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
 	void VulkanMain::createTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("../Fable/src/Textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
 		
 		if (!pixels)
@@ -438,9 +478,9 @@ namespace Fable
 		createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 		
 		void* data;
-		vkMapMemory(m_Device, stagingBufferMemory, 0, imageSize, 0, &data);
+		vkMapMemory(m_VulkanDevices.device, stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vkUnmapMemory(m_Device, stagingBufferMemory);
+		vkUnmapMemory(m_VulkanDevices.device, stagingBufferMemory);
 		
 		stbi_image_free(pixels);
 
@@ -452,21 +492,19 @@ namespace Fable
 		copyBufferToImage(stagingBuffer, m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 		transitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		//std::cout << "Value: " << pixels[0];
-
-		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(m_VulkanDevices.device, stagingBuffer, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, stagingBufferMemory, nullptr);
 	}
 
 	void VulkanMain::createTextureImageView()
 	{
-		m_TextureImageView = createImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+		m_TextureImageView = createImageView(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void VulkanMain::createTextureSampler()
 	{
 		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+		vkGetPhysicalDeviceProperties(m_VulkanDevices.physicalDevice, &properties);
 
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -486,8 +524,45 @@ namespace Fable
 		//samplerInfo.minLod = 0.0f;
 		//samplerInfo.maxLod = 0.0f;
 
-		VkResult err = vkCreateSampler(m_Device, &samplerInfo, nullptr, &m_TextureSampler);
+		VkResult err = vkCreateSampler(m_VulkanDevices.device, &samplerInfo, nullptr, &m_TextureSampler);
 		ThrowError(err, "Failed to create texture sampler!");
+	}
+
+	void VulkanMain::loadModel()
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
+		{
+			throw std::runtime_error(warn + err);
+		}
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				vertex.texCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				vertex.color = { 1.0f, 1.0f, 1.0f };
+
+				vertices.emplace_back(vertex);
+				indices.emplace_back(indices.size());
+			}
+		}
 	}
 
 	void VulkanMain::createVertexBuffer()
@@ -502,17 +577,17 @@ namespace Fable
 
 		void* data;
 
-		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(m_VulkanDevices.device, stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, vertices.data(), (size_t)bufferSize);
-		vkUnmapMemory(m_Device, stagingBufferMemory);
+		vkUnmapMemory(m_VulkanDevices.device, stagingBufferMemory);
 
 		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
 
 		copyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
 
-		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(m_VulkanDevices.device, stagingBuffer, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, stagingBufferMemory, nullptr);
 	}
 
 	void VulkanMain::createIndexBuffer()
@@ -527,17 +602,17 @@ namespace Fable
 
 		void* data;
 
-		vkMapMemory(m_Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(m_VulkanDevices.device, stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(m_Device, stagingBufferMemory);
+		vkUnmapMemory(m_VulkanDevices.device, stagingBufferMemory);
 
 		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
 
 		copyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
 
-		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
-		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(m_VulkanDevices.device, stagingBuffer, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, stagingBufferMemory, nullptr);
 	}
 
 	void VulkanMain::createUniformBuffers()
@@ -553,7 +628,7 @@ namespace Fable
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
 						 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
 
-			vkMapMemory(m_Device, m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
+			vkMapMemory(m_VulkanDevices.device, m_UniformBuffersMemory[i], 0, bufferSize, 0, &m_UniformBuffersMapped[i]);
 		}
 	}
 
@@ -571,7 +646,7 @@ namespace Fable
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-		VkResult err = vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &m_DescriptorPool);
+		VkResult err = vkCreateDescriptorPool(m_VulkanDevices.device, &poolInfo, nullptr, &m_DescriptorPool);
 		ThrowError(err, "Failed to create descriptor pool!");
 	}
 
@@ -585,7 +660,7 @@ namespace Fable
 		allocInfo.pSetLayouts = layouts.data();
 
 		m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		VkResult err = vkAllocateDescriptorSets(m_Device, &allocInfo, m_DescriptorSets.data());
+		VkResult err = vkAllocateDescriptorSets(m_VulkanDevices.device, &allocInfo, m_DescriptorSets.data());
 		ThrowError(err, "Failed to allocate descriptor sets!");
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -617,7 +692,7 @@ namespace Fable
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(m_Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_VulkanDevices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -631,7 +706,7 @@ namespace Fable
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 
-		VkResult err = vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffers.data());
+		VkResult err = vkAllocateCommandBuffers(m_VulkanDevices.device, &allocInfo, m_CommandBuffers.data());
 		ThrowError(err, "Failed to allocate command buffers!");
 	}
 
@@ -650,9 +725,9 @@ namespace Fable
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(m_Device, &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
+			if (vkCreateSemaphore(m_VulkanDevices.device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(m_VulkanDevices.device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(m_VulkanDevices.device, &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS)
 			{
 				throw std::runtime_error("Failed to create synchronization objects for a frame!");
 			}
@@ -673,14 +748,16 @@ namespace Fable
 		renderPassBeginInfo.renderArea.offset = { 0, 0 };
 		renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
 
-		VkClearValue clearColor = { {{ 0.2f, 0.2f, 0.2f, 1.0f }} };
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = {{0.2f, 0.2f, 0.2f, 1.0f}};
+		clearValues[1].depthStencil = { 1.0f, 0 };
 
-		renderPassBeginInfo.clearValueCount = 1;
-		renderPassBeginInfo.pClearValues = &clearColor;
+		renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassBeginInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+		//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
 		// Viewports and Scissors
 		VkViewport viewport{};
@@ -701,7 +778,7 @@ namespace Fable
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1,
 								&m_DescriptorSets[m_CurrentFrame], 0, nullptr);
@@ -719,22 +796,22 @@ namespace Fable
 		// Swapchain
 		VkExtent2D actualExtent;
 		SwapChainSupportDetails swapchainDetails;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &swapchainDetails.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_VulkanDevices.physicalDevice, m_Surface, &swapchainDetails.capabilities);
 
 		uint32_t formatCount = 0;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(m_VulkanDevices.physicalDevice, m_Surface, &formatCount, nullptr);
 		if (formatCount != 0)
 		{
 			swapchainDetails.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &formatCount, swapchainDetails.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(m_VulkanDevices.physicalDevice, m_Surface, &formatCount, swapchainDetails.formats.data());
 		}
 
 		uint32_t presentModeCount = 0;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(m_VulkanDevices.physicalDevice, m_Surface, &presentModeCount, nullptr);
 		if (presentModeCount != 0)
 		{
 			swapchainDetails.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &presentModeCount, swapchainDetails.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(m_VulkanDevices.physicalDevice, m_Surface, &presentModeCount, swapchainDetails.presentModes.data());
 		}
 
 		if (swapchainDetails.capabilities.currentExtent.width == UINT32_MAX)
@@ -775,7 +852,7 @@ namespace Fable
 		swapchainInfo.imageArrayLayers = 1;
 		swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		QueueFamilyIndices indices = findQueueFamilies(m_PhysicalDevice);
+		QueueFamilyIndices indices = findQueueFamilies(m_VulkanDevices.physicalDevice);
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 		if (indices.graphicsFamily != indices.presentFamily)
@@ -797,12 +874,12 @@ namespace Fable
 		swapchainInfo.clipped = VK_TRUE;
 		swapchainInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		VkResult err = vkCreateSwapchainKHR(m_Device, &swapchainInfo, nullptr, &m_Swapchain);
+		VkResult err = vkCreateSwapchainKHR(m_VulkanDevices.device, &swapchainInfo, nullptr, &m_Swapchain);
 		ThrowError(err, "Failed to create swapchain!");
 
-		vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(m_VulkanDevices.device, m_Swapchain, &imageCount, nullptr);
 		m_SwapchainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &imageCount, m_SwapchainImages.data());
+		vkGetSwapchainImagesKHR(m_VulkanDevices.device, m_Swapchain, &imageCount, m_SwapchainImages.data());
 
 		m_SwapchainImageFormat = surfaceFormat.format;
 		m_SwapchainExtent = extent;
@@ -817,35 +894,40 @@ namespace Fable
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(m_Device);
+		vkDeviceWaitIdle(m_VulkanDevices.device);
 		cleanUpSwapchain();
 
 		createSwapchain();
 		createImageViews();
+		createDepthResources();
 		createFramebuffers();
 	}
 
 	void VulkanMain::cleanUpSwapchain()
 	{
+		vkDestroyImageView(m_VulkanDevices.device, m_DepthImageView, nullptr);
+		vkDestroyImage(m_VulkanDevices.device, m_DepthImage, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, m_DepthImageMemory, nullptr);
+
 		for (auto framebuffer : m_SwapchainFrameBuffer)
 		{
-			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+			vkDestroyFramebuffer(m_VulkanDevices.device, framebuffer, nullptr);
 		}
 
 		for (auto imageView : m_SwapchainImageViews)
 		{
-			vkDestroyImageView(m_Device, imageView, nullptr);
+			vkDestroyImageView(m_VulkanDevices.device, imageView, nullptr);
 		}
 
-		vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+		vkDestroySwapchainKHR(m_VulkanDevices.device, m_Swapchain, nullptr);
 	}
 
 	void VulkanMain::drawFrame()
 	{
-		vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(m_VulkanDevices.device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_VulkanDevices.device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			recreateSwapchain();
@@ -856,11 +938,13 @@ namespace Fable
 			ThrowError(result, "Failed to aquire swapchain image!");
 		}
 
-		vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
+		vkResetFences(m_VulkanDevices.device, 1, &m_InFlightFences[m_CurrentFrame]);
 
 		vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
+
 		recordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
-		updateUniformBuffer(m_CurrentFrame);
+
+		//updateUniformBuffer(m_CurrentFrame);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -905,44 +989,49 @@ namespace Fable
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
+	inline VkDevice VulkanMain::getDevice()
+	{
+		return m_VulkanDevices.device;
+	}
+
 	void VulkanMain::cleanup()
 	{
 		cleanUpSwapchain();
 
-		vkDestroySampler(m_Device, m_TextureSampler, nullptr);
-		vkDestroyImageView(m_Device, m_TextureImageView, nullptr);
+		vkDestroySampler(m_VulkanDevices.device, m_TextureSampler, nullptr);
+		vkDestroyImageView(m_VulkanDevices.device, m_TextureImageView, nullptr);
 
-		vkDestroyImage(m_Device, m_TextureImage, nullptr);
-		vkFreeMemory(m_Device, m_TextureImageMemory, nullptr);
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroyBuffer(m_Device, m_UniformBuffers[i], nullptr);
-			vkFreeMemory(m_Device, m_UniformBuffersMemory[i], nullptr);
-		}
-
-		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
-
-		vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
-
-		vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
-		vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
-
-		vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
-		vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
-
-		vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
-		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+		vkDestroyImage(m_VulkanDevices.device, m_TextureImage, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, m_TextureImageMemory, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroySemaphore(m_Device, m_RenderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(m_Device, m_ImageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(m_Device, m_InFlightFences[i], nullptr);
+			vkDestroyBuffer(m_VulkanDevices.device, m_UniformBuffers[i], nullptr);
+			vkFreeMemory(m_VulkanDevices.device, m_UniformBuffersMemory[i], nullptr);
 		}
 
-		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+		vkDestroyDescriptorPool(m_VulkanDevices.device, m_DescriptorPool, nullptr);
 
-		vkDestroyDevice(m_Device, nullptr);
+		vkDestroyDescriptorSetLayout(m_VulkanDevices.device, m_DescriptorSetLayout, nullptr);
+
+		vkDestroyBuffer(m_VulkanDevices.device, m_IndexBuffer, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, m_IndexBufferMemory, nullptr);
+
+		vkDestroyBuffer(m_VulkanDevices.device, m_VertexBuffer, nullptr);
+		vkFreeMemory(m_VulkanDevices.device, m_VertexBufferMemory, nullptr);
+
+		//vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_VulkanDevices.device, m_PipelineLayout, nullptr);
+		vkDestroyRenderPass(m_VulkanDevices.device, m_RenderPass, nullptr);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			vkDestroySemaphore(m_VulkanDevices.device, m_RenderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(m_VulkanDevices.device, m_ImageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(m_VulkanDevices.device, m_InFlightFences[i], nullptr);
+		}
+
+		vkDestroyCommandPool(m_VulkanDevices.device, m_CommandPool, nullptr);
+
+		vkDestroyDevice(m_VulkanDevices.device, nullptr);
 #ifdef FB_DEBUG
 		auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
 		vkDestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
@@ -960,23 +1049,23 @@ namespace Fable
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+		if (vkCreateBuffer(m_VulkanDevices.device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create vertex buffer!");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_Device, buffer, &memRequirements);
+		vkGetBufferMemoryRequirements(m_VulkanDevices.device, buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-		if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+		if (vkAllocateMemory(m_VulkanDevices.device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate vertex buffer memory!");
 		}
 
-		vkBindBufferMemory(m_Device, buffer, bufferMemory, 0);
+		vkBindBufferMemory(m_VulkanDevices.device, buffer, bufferMemory, 0);
 	}
 
 	void VulkanMain::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
@@ -1002,7 +1091,7 @@ namespace Fable
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
+		vkAllocateCommandBuffers(m_VulkanDevices.device, &allocInfo, &commandBuffer);
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1024,7 +1113,7 @@ namespace Fable
 		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(m_GraphicsQueue);
 
-		vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(m_VulkanDevices.device, m_CommandPool, 1, &commandBuffer);
 	}
 
 	void VulkanMain::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -1043,27 +1132,36 @@ namespace Fable
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = 0;
 
 		VkPipelineStageFlags sourceStage;
 		VkPipelineStageFlags destinationStage;
 
-		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) 
+		{
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) 
+		{
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		}
-		else {
+		else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		}
+		else 
+		{
 			throw std::invalid_argument("unsupported layout transition!");
 		}
 
@@ -1102,8 +1200,8 @@ namespace Fable
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapchainExtent.width / (float)m_SwapchainExtent.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
@@ -1111,40 +1209,6 @@ namespace Fable
 	}
 
 	// Helper Functions
-	std::vector<char> VulkanMain::readFile(const std::string& filename)
-	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file!");
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-
-		return buffer;
-	}
-
-	VkShaderModule VulkanMain::createShaderModule(const std::vector<char>& code)
-	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create shader module!");
-		}
-
-		return shaderModule;
-	}
-
 	VulkanMain::QueueFamilyIndices VulkanMain::findQueueFamilies(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;
 
@@ -1180,7 +1244,7 @@ namespace Fable
 	uint32_t VulkanMain::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+		vkGetPhysicalDeviceMemoryProperties(m_VulkanDevices.physicalDevice, &memProperties);
 
 		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
 			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -1189,6 +1253,37 @@ namespace Fable
 		}
 
 		throw std::runtime_error("failed to find suitable memory type!");
+	}
+	VkFormat VulkanMain::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+	{
+		for (VkFormat format : candidates)
+		{
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(m_VulkanDevices.physicalDevice, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) 
+			{
+				return format;
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) 
+			{
+				return format;
+			}
+		}
+
+		throw std::runtime_error("failed to find supported format!");
+	}
+	VkFormat VulkanMain::findDepthFormat()
+	{
+		return findSupportedFormat(
+			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		);
+	}
+	bool VulkanMain::hasStencilComponent(VkFormat format)
+	{
+		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 	void VulkanMain::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 	{
@@ -1207,37 +1302,37 @@ namespace Fable
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VkResult err = vkCreateImage(m_Device, &imageInfo, nullptr, &image);
+		VkResult err = vkCreateImage(m_VulkanDevices.device, &imageInfo, nullptr, &image);
 		ThrowError(err, "Failed to create image!");
 
 		VkMemoryRequirements memoryReqs;
-		vkGetImageMemoryRequirements(m_Device, image, &memoryReqs);
+		vkGetImageMemoryRequirements(m_VulkanDevices.device, image, &memoryReqs);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memoryReqs.size;
 		allocInfo.memoryTypeIndex = findMemoryType(memoryReqs.memoryTypeBits, properties);
 
-		err = vkAllocateMemory(m_Device, &allocInfo, nullptr, &imageMemory);
+		err = vkAllocateMemory(m_VulkanDevices.device, &allocInfo, nullptr, &imageMemory);
 		ThrowError(err, "Failed too allocate image memory!");
 
-		vkBindImageMemory(m_Device, image, imageMemory, 0);
+		vkBindImageMemory(m_VulkanDevices.device, image, imageMemory, 0);
 	}
-	VkImageView VulkanMain::createImageView(VkImage image, VkFormat format)
+	VkImageView VulkanMain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = image;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		VkResult err = vkCreateImageView(m_Device, &viewInfo, nullptr, &imageView);
+		VkResult err = vkCreateImageView(m_VulkanDevices.device, &viewInfo, nullptr, &imageView);
 		ThrowError(err, "Failed to create image view!");
 
 		return imageView;
