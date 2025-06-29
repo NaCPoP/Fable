@@ -1,5 +1,7 @@
 #include "fbpch.h"
 #include "VulkanInitalizers.h"
+#include "Fable/Renderer/RendererAPI.h"
+#include "glm/glm.hpp"
 
 namespace Fable
 {
@@ -17,14 +19,15 @@ namespace Fable
 		return shaderStageInfo;
 	}
 
-	VkPipelineVertexInputStateCreateInfo VulkanInitalizers::createVertexInputInfo()
+	VkPipelineVertexInputStateCreateInfo VulkanInitalizers::createVertexInputInfo(VkVertexInputBindingDescription bindingDescription, 
+																				  VkVertexInputAttributeDescription attributeDescription)
 	{
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount	= 0;
-		vertexInputInfo.pVertexBindingDescriptions		= nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions	= nullptr;
+		vertexInputInfo.vertexBindingDescriptionCount	= 1;
+		vertexInputInfo.pVertexBindingDescriptions		= &bindingDescription;
+		vertexInputInfo.vertexAttributeDescriptionCount = 1;
+		vertexInputInfo.pVertexAttributeDescriptions	= &attributeDescription;
 
 		return vertexInputInfo;
 	}
@@ -99,5 +102,93 @@ namespace Fable
 		pipelineLayout.pPushConstantRanges		= nullptr;
 
 		return pipelineLayout;
+	}
+
+	VkVertexInputBindingDescription VulkanInitalizers::createVertexBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescriptions{};
+		bindingDescriptions.binding		= 0;
+		bindingDescriptions.stride		= sizeof(glm::vec3);
+		bindingDescriptions.inputRate	= VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
+	}
+
+	VkVertexInputAttributeDescription VulkanInitalizers::createVertexAttributeDescription()
+	{
+		VkVertexInputAttributeDescription attributeDescriptions{};
+		attributeDescriptions.binding	= 0;
+		attributeDescriptions.location	= 0;
+		attributeDescriptions.format	= VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions.offset	= 0;
+
+		return attributeDescriptions;
+	}
+
+	VkDescriptorSetLayoutBinding VulkanInitalizers::createDescriptorSetLayout()
+	{
+		VkDescriptorSetLayoutBinding globalUboDescriptorSetLayout{};
+		globalUboDescriptorSetLayout.binding			= 0;
+		globalUboDescriptorSetLayout.descriptorCount	= 1;
+		globalUboDescriptorSetLayout.descriptorType		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		globalUboDescriptorSetLayout.pImmutableSamplers = 0;
+		globalUboDescriptorSetLayout.stageFlags			= VK_SHADER_STAGE_VERTEX_BIT;
+
+		return globalUboDescriptorSetLayout;
+	}
+
+	VkDescriptorSetLayoutCreateInfo VulkanInitalizers::createDescriptorLayoutInfo(VkDescriptorSetLayoutBinding layoutInfo)
+	{
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+		descriptorSetLayoutInfo.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorSetLayoutInfo.bindingCount	= 1;
+		descriptorSetLayoutInfo.pBindings		= &layoutInfo;
+
+		return descriptorSetLayoutInfo;
+	}
+
+	VkDescriptorPoolCreateInfo VulkanInitalizers::createDescriptorPool(uint32_t imageCount)
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount	= imageCount;
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount		= 1;
+		poolInfo.pPoolSizes			= &poolSize;
+		poolInfo.maxSets			= imageCount;
+
+		return poolInfo;
+	}
+
+	VkDescriptorSetAllocateInfo VulkanInitalizers::allocDescriptorSet(VkDescriptorPool descriptorPool, std::array<VkDescriptorSetLayout, 3> layouts)
+	{
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorSetCount = 3;
+		allocInfo.descriptorPool = descriptorPool;
+		allocInfo.pSetLayouts = layouts.data();
+
+		return allocInfo;
+	}
+
+	VkWriteDescriptorSet VulkanInitalizers::createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = uniformBuffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(Fable::RendererAPI::global_ubo);
+
+		VkWriteDescriptorSet descriptorWrites{};
+		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites.dstSet = descriptorSet[imageIdx];
+		descriptorWrites.dstBinding = 0;
+		descriptorWrites.dstArrayElement = 0;
+		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites.descriptorCount = 1;
+		descriptorWrites.pBufferInfo = &bufferInfo;
+
+		return descriptorWrites;
 	}
 }

@@ -11,12 +11,28 @@ namespace Fable
 		* GRAPHICS PIPELINE
 		*/
 		static VkPipelineShaderStageCreateInfo createShaderStageInfo(VkShaderStageFlagBits stage, VkShaderModule module);
-		static VkPipelineVertexInputStateCreateInfo createVertexInputInfo();
+		static VkPipelineVertexInputStateCreateInfo createVertexInputInfo(VkVertexInputBindingDescription bindingDescription,
+																		  VkVertexInputAttributeDescription attributeDescription);
 		static VkPipelineInputAssemblyStateCreateInfo createInputAssemblyInfo(VkPrimitiveTopology topology);
 		static VkPipelineRasterizationStateCreateInfo createRasterizationInfo(VkPolygonMode polygonMode);
 		static VkPipelineMultisampleStateCreateInfo createMultisampleInfo();
 		static VkPipelineColorBlendAttachmentState createColorBlendAttachment();
 		static VkPipelineLayoutCreateInfo createPipelineLayout();
+
+		/*
+		* VERTEX BUFFERS
+		*/
+		static VkVertexInputBindingDescription createVertexBindingDescription();
+		static VkVertexInputAttributeDescription createVertexAttributeDescription();
+
+		/*
+		* UNIFORM BUFFERS
+		*/
+		static VkDescriptorSetLayoutBinding createDescriptorSetLayout();
+		static VkDescriptorSetLayoutCreateInfo createDescriptorLayoutInfo(VkDescriptorSetLayoutBinding layoutInfo);
+		static VkDescriptorPoolCreateInfo createDescriptorPool(uint32_t imageCount);
+		static VkDescriptorSetAllocateInfo allocDescriptorSet(VkDescriptorPool descriptorPool, std::array<VkDescriptorSetLayout, 3> layouts);
+		static VkWriteDescriptorSet createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx);
 	private:
 	};
 }

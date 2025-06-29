@@ -4,6 +4,7 @@
 #include "LayerStack.h"
 
 #include "Renderer/Shader.h"
+#include "Renderer/Buffer.h"
 #include "Renderer/GraphicsContext.h"
 
 #include "Platform/VulkanRendering/VulkanContext.h"
@@ -34,6 +35,8 @@ namespace Fable
 		std::unique_ptr<Window> m_Window;
 		std::unique_ptr<GraphicsContext> m_Context;
 		std::unique_ptr<Shader> m_Shader;
+		std::unique_ptr<VertexBuffer> m_VertexBuffer;
+		std::unique_ptr<IndexBuffer> m_IndexBuffer;
 	};
 
 	Application* CreateApplication();

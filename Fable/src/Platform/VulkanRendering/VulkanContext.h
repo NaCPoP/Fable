@@ -40,7 +40,11 @@ namespace Fable
 
 	class VulkanContext : public GraphicsContext
 	{
+		friend class VulkanVertexBuffer;
+		friend class VulkanIndexBuffer;
 		friend class VulkanShader;
+		friend class VulkanRendererAPI;
+
 	public:
 		VulkanContext(GLFWwindow* window);
 		~VulkanContext();
@@ -49,12 +53,26 @@ namespace Fable
 		virtual void Shutdown() override;
 		virtual void SwapBuffers() override;
 		virtual void Draw() override;
+
+		/*
+		* NEW
+		*/
+		
 	
 	private:
-		GLFWwindow* m_Window;
-		RendererSettings m_Settings;
-		uint32_t m_CurrentFrame = 0;
-		uint32_t m_ImageIndex = 0;
+		/*
+		*	ORGANISE LATER (KEEP)
+		*/
+
+		uint32_t m_IndicesCount = 0;
+
+		/*
+		* 
+		*/
+		GLFWwindow*			m_Window;
+		RendererSettings	m_Settings;
+		uint32_t			m_CurrentFrame = 0;
+		uint32_t			m_ImageIndex = 0;
 		/*
 		*	CORE VULKAN
 		*/
@@ -84,18 +102,31 @@ namespace Fable
 		VkQueue m_PresentQueue;
 
 		VkCommandPool	m_CommandPool;
-		VkCommandBuffer m_CommandBuffer;
+		std::vector<VkCommandBuffer> m_CommandBuffers;
 		/*
 		* RENDER PASSES
 		*/
 		VkRenderPass				m_RenderPass;
 		std::vector<VkFramebuffer>	m_FrameBuffers;
-		VkPipeline m_GraphicsPipeline{ VK_NULL_HANDLE };
+		std::vector<VkPipeline>		m_GraphicsPipelines{};
+
+		VkDeviceMemory				m_VertexBufferMemory;
+		std::vector<VkBuffer>		m_VertexBuffers{};
+		VkDeviceMemory				m_IndexBufferMemory;
+		std::vector<VkBuffer>		m_IndexBuffers{};
 		/*
 		* SYNC OBJECTS
 		*/
 		VkSemaphore m_PresentSemaphore, m_RenderSemaphore;
 		VkFence		m_RenderFence;
+		/*
+		* UNIFORM BUFFER
+		*/
+		std::vector<VkDescriptorSet> m_GlobalDescriptorSets{};
+		VkPipelineLayout m_PipelineLayout;
+		VkBuffer m_UniformBuffer;
+		VkWriteDescriptorSet m_WriteDescriptorSet;
+
 		/*
 		*	FUNCTIONS
 		*/

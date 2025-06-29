@@ -3,11 +3,10 @@
 
 #include "VulkanBackend/VulkanUtilities.h"
 #include "VulkanBackend/VulkanPipelineBuilder.h"
+#include "VulkanBackend/VulkanInitalizers.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../vendor/stb_image/stb_image.h"
-
-#include "VulkanTypes.h"
 
 #ifdef FB_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -79,7 +78,7 @@ namespace Fable
 		createFrameBuffers();
 		createSyncStructures();
 		createCommandBuffers();
-		SwapBuffers();
+		//SwapBuffers();
 	}
 
 	void VulkanContext::Shutdown()
@@ -116,7 +115,7 @@ namespace Fable
 		}
 		vkResetFences(m_Device, 1, &m_RenderFence);
 
-		vkResetCommandBuffer(m_CommandBuffer, 0);
+		vkResetCommandBuffer(m_CommandBuffers[0], 0);
 	}
 
 	void VulkanContext::Draw()
@@ -125,13 +124,17 @@ namespace Fable
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		if (vkBeginCommandBuffer(m_CommandBuffer, &beginInfo) != VK_SUCCESS)
+		if (vkBeginCommandBuffer(m_CommandBuffers[0], &beginInfo) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to begin command buffer!");
 		}
 
 		VkClearValue clearValue{ {0.2f, 0.2f, 0.2, 1.0f} };
 
+
+		/* -------------------------------------------------------------------------------------
+		*  MOVE TO RENDERER
+		*/
 		VkRenderPassBeginInfo renderPassBeginInfo{};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.renderPass = m_RenderPass;
@@ -140,19 +143,48 @@ namespace Fable
 		renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
 		renderPassBeginInfo.clearValueCount = 1;
 		renderPassBeginInfo.pClearValues = &clearValue;
-
-		vkCmdBeginRenderPass(m_CommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(m_CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
-
-		vkCmdDraw(m_CommandBuffer, 3, 1, 0, 0);
 		
-		vkCmdEndRenderPass(m_CommandBuffer);
+		vkCmdBeginRenderPass(m_CommandBuffers[0], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		// -------------------------------------------------------------------------------------
 
-		if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = (float)m_SwapchainExtent.height;
+		viewport.width = (float)m_SwapchainExtent.width;
+		viewport.height = -(float)m_SwapchainExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(m_CommandBuffers[0], 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = m_SwapchainExtent;
+		vkCmdSetScissor(m_CommandBuffers[0], 0, 1, &scissor);
+
+		VkDeviceSize offsets[] = { 0 };
+		for (int i = 0; i < m_GraphicsPipelines.size(); i++)
+		{
+			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipelines[i]);
+
+			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, &m_VertexBuffers[i], offsets);
+
+			vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffers[i], 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1,
+				&m_GlobalDescriptorSets[i], 0, nullptr);
+
+			vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(6), 1, 0, 0, 0);
+		}
+		
+		vkCmdEndRenderPass(m_CommandBuffers[0]);
+
+		if (vkEndCommandBuffer(m_CommandBuffers[0]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to end command Buffer!");
 		}
+
+		m_WriteDescriptorSet = VulkanInitalizers::createDescriptorSets(m_UniformBuffer, m_GlobalDescriptorSets, m_ImageIndex);
+		vkUpdateDescriptorSets(m_Device, 1, &m_WriteDescriptorSet, 0, 0);
 
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -162,7 +194,7 @@ namespace Fable
 		submitInfo.pWaitSemaphores = &m_PresentSemaphore;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_CommandBuffers[0];
 
 		VkSemaphore signalSemaphores[] = { m_RenderSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
@@ -222,7 +254,7 @@ namespace Fable
 		createInfo.imageColorSpace	= surfaceFormat.colorSpace;
 		createInfo.imageExtent		= extent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInfo.imageUsage		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		QueueFamilyIndices indices		= findQueueFamilies(m_PhysicalDevice);
 		uint32_t queueFamilyIndices[]	= { indices.graphicsFamily, indices.presentFamily };
@@ -365,13 +397,15 @@ namespace Fable
 
 	void VulkanContext::createCommandBuffers()
 	{
+		m_CommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = m_CommandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = 1;
+		allocInfo.commandBufferCount = m_CommandBuffers.size();
 
-		if (vkAllocateCommandBuffers(m_Device, &allocInfo, &m_CommandBuffer) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffers.data()) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to allocate command buffer!");
 		}
@@ -379,13 +413,13 @@ namespace Fable
 
 	void VulkanContext::recordCommandBuffers()
 	{
-		vkResetCommandBuffer(m_CommandBuffer, 0);
+		vkResetCommandBuffer(m_CommandBuffers[0], 0);
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		if (vkBeginCommandBuffer(m_CommandBuffer, &beginInfo) != VK_SUCCESS)
+		if (vkBeginCommandBuffer(m_CommandBuffers[0], &beginInfo) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to begin command buffer!");
 		}
