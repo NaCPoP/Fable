@@ -17,7 +17,7 @@ namespace Fable
 		void Bind() const override;
 		void Unbind() const override;
 		void Load(const std::string&& vertexFilePath, const std::string&& fragmentFilePath) override;
-		void LoadUniformBuffer() override;
+		void LoadUniformBuffer(glm::mat4 projection, glm::mat4 view) override;
 
 	private:
 		VulkanPipelineBuilder* m_PipelineBuilder;
@@ -33,16 +33,23 @@ namespace Fable
 		// ---------------
 		// UNIFORM BUFFERS
 		// ---------------
-		VkDescriptorPool m_DescriptorPool;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
-		std::array<VkDescriptorSetLayout, 3> m_GlobalLayouts{};
-		std::vector<VkDescriptorSet> m_GlobalDescriptorSets{};
+		VkDescriptorSetLayoutBinding			m_DescriptorSetLayoutBinding;
+		VkDescriptorSetLayoutCreateInfo			m_DescriptorSetLayoutInfo;
+		VkDescriptorSetLayout					m_DescriptorSetLayout;
 
 		Fable::RendererAPI::global_ubo m_GlobalUbo;
 
-		VkBuffer m_UniformBuffer;
-		VkDeviceMemory m_UniformBufferMemory;
-		void* m_UniformBuffersMapped;
+		std::vector<VkBuffer> m_UniformBuffers;
+		std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+		std::vector<void*> m_UniformBuffersMapped;
+
+		// DESCRIPTOR SETS
+		VkDescriptorPoolCreateInfo m_DescriptorPoolInfo;
+		VkDescriptorPool m_DescriptorPool;
+
+		VkDescriptorSetAllocateInfo m_PoolAllocInfo;
+		std::vector<VkDescriptorSet> m_DescriptorSets;
+
 	};
 }
 

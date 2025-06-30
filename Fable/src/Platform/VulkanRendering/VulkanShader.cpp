@@ -36,6 +36,8 @@ namespace Fable
 		vkCmdSetScissor(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], 0, 1, &scissor);
 
 		vkCmdBindPipeline(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+
+		vkCmdBindDescriptorSets(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[0], 0, nullptr);
 	}
 
 	void VulkanShader::Unbind() const
@@ -59,18 +61,32 @@ namespace Fable
 			VulkanInitalizers::createShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, m_FragShader)
 		);
 
-		m_PipelineBuilder->m_BindingDescription = VulkanInitalizers::createVertexBindingDescription();
-		m_PipelineBuilder->m_AttribbuteDescription = VulkanInitalizers::createVertexAttributeDescription();
-		m_PipelineBuilder->m_VertexInputInfo = VulkanInitalizers::createVertexInputInfo(m_PipelineBuilder->m_BindingDescription,
-			m_PipelineBuilder->m_AttribbuteDescription);
+		m_PipelineBuilder->m_RasterizationInfo		= VulkanInitalizers::createRasterizationInfo(VK_POLYGON_MODE_FILL);
+		m_PipelineBuilder->m_MultisampleInfo		= VulkanInitalizers::createMultisampleInfo();
+		m_PipelineBuilder->m_ColorBlendAttachment	= VulkanInitalizers::createColorBlendAttachment();
 
-		m_PipelineBuilder->m_InputAssemblyInfo = VulkanInitalizers::createInputAssemblyInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		/*
+		*	VERTEX AND INDEX BUFFERS
+		*/
+		m_PipelineBuilder->m_BindingDescription		= VulkanInitalizers::createVertexBindingDescription();
+		m_PipelineBuilder->m_AttribbuteDescription	= VulkanInitalizers::createVertexAttributeDescription();
+		m_PipelineBuilder->m_VertexInputInfo		= VulkanInitalizers::createVertexInputInfo(m_PipelineBuilder->m_BindingDescription, m_PipelineBuilder->m_AttribbuteDescription);
+		m_PipelineBuilder->m_InputAssemblyInfo		= VulkanInitalizers::createInputAssemblyInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-		m_PipelineBuilder->m_RasterizationInfo = VulkanInitalizers::createRasterizationInfo(VK_POLYGON_MODE_FILL);
-		m_PipelineBuilder->m_MultisampleInfo = VulkanInitalizers::createMultisampleInfo();
-		m_PipelineBuilder->m_ColorBlendAttachment = VulkanInitalizers::createColorBlendAttachment();
+		/*
+		*	DESCRIPTOR SETS
+		*/
+		m_DescriptorSetLayoutBinding = VulkanInitalizers::createDescriptorSetLayout();
+		m_DescriptorSetLayoutInfo = VulkanInitalizers::createDescriptorLayoutInfo(m_DescriptorSetLayoutBinding);
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = VulkanInitalizers::createPipelineLayout();
+		if (vkCreateDescriptorSetLayout(m_Context->m_Device, &m_DescriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create descriptor set layout!");
+		}
+
+		/*
+		*	PIPELINE LAYOUT
+		*/
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = VulkanInitalizers::createPipelineLayout(m_DescriptorSetLayout);
 		if (vkCreatePipelineLayout(m_Context->m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout))
 		{
 			throw std::runtime_error("Failed to create pipeline layout");
@@ -81,8 +97,47 @@ namespace Fable
 		m_GraphicsPipeline = m_PipelineBuilder->createGraphicsPipeline(m_Context->m_Device, m_Context->m_RenderPass);
 	}
 
-	void VulkanShader::LoadUniformBuffer()
+	void VulkanShader::LoadUniformBuffer(glm::mat4 projection, glm::mat4 view)
 	{
+		m_GlobalUbo.projection = projection;
+		m_GlobalUbo.view = view;
 
+		// UNIFORM BUFFERS
+		VkDeviceSize bufferSize = sizeof(m_GlobalUbo);
+
+		m_UniformBuffers.resize(2);
+		m_UniformBuffersMemory.resize(2);
+		m_UniformBuffersMapped.resize(2);
+
+		m_UniformBuffers[0] = (VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffersMemory[0]));
+
+		vkMapMemory(m_Context->m_Device, m_UniformBuffersMemory[0], 0, bufferSize, 0, &m_UniformBuffersMapped[0]);
+
+		// DESCRIPTOR POOLS
+		m_DescriptorPoolInfo = VulkanInitalizers::createDescriptorPool();
+
+		if (vkCreateDescriptorPool(m_Context->m_Device, &m_DescriptorPoolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create descriptor pool!");
+		}
+
+		memcpy(m_UniformBuffersMapped[m_Context->m_CurrentFrame], &m_GlobalUbo, sizeof(m_GlobalUbo));
+
+		m_DescriptorSets = VulkanInitalizers::allocDescriptorSet(m_Context->m_Device, m_DescriptorPool, m_DescriptorSetLayout, m_DescriptorSets);
+
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_UniformBuffers[0];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(m_GlobalUbo);
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = m_DescriptorSets[0];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(m_Context->m_Device, 1, &descriptorWrite, 0, nullptr);
 	}
 }

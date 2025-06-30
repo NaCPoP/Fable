@@ -1,6 +1,8 @@
 #pragma once
 
 #include "GraphicsContext.h"
+
+#include "glm/glm.hpp"
 #include <any>
 
 namespace Fable
@@ -15,7 +17,7 @@ namespace Fable
 
 		virtual void Load(const std::string&& vertexFilePath, const std::string&& fragmentFilePath) = 0;
 
-		virtual void LoadUniformBuffer() = 0;
+		virtual void LoadUniformBuffer(glm::mat4 porjection, glm::mat4 view) = 0;
 
 		static Shader* Create(GraphicsContext* context);
 	};

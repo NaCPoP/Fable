@@ -17,7 +17,7 @@ namespace Fable
 		static VkPipelineRasterizationStateCreateInfo createRasterizationInfo(VkPolygonMode polygonMode);
 		static VkPipelineMultisampleStateCreateInfo createMultisampleInfo();
 		static VkPipelineColorBlendAttachmentState createColorBlendAttachment();
-		static VkPipelineLayoutCreateInfo createPipelineLayout();
+		static VkPipelineLayoutCreateInfo createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout);
 
 		/*
 		* VERTEX BUFFERS
@@ -30,8 +30,8 @@ namespace Fable
 		*/
 		static VkDescriptorSetLayoutBinding createDescriptorSetLayout();
 		static VkDescriptorSetLayoutCreateInfo createDescriptorLayoutInfo(VkDescriptorSetLayoutBinding layoutInfo);
-		static VkDescriptorPoolCreateInfo createDescriptorPool(uint32_t imageCount);
-		static VkDescriptorSetAllocateInfo allocDescriptorSet(VkDescriptorPool descriptorPool, std::array<VkDescriptorSetLayout, 3> layouts);
+		static VkDescriptorPoolCreateInfo createDescriptorPool();
+		static std::vector<VkDescriptorSet> allocDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout layout, std::vector<VkDescriptorSet> descriptorSets);
 		static VkWriteDescriptorSet createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx);
 	private:
 	};

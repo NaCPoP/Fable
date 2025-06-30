@@ -91,13 +91,13 @@ namespace Fable
 		return colorBlendAttachment;
 	}
 
-	VkPipelineLayoutCreateInfo VulkanInitalizers::createPipelineLayout()
+	VkPipelineLayoutCreateInfo VulkanInitalizers::createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout)
 	{
 		VkPipelineLayoutCreateInfo pipelineLayout{};
 		pipelineLayout.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayout.flags					= 0;
-		pipelineLayout.setLayoutCount			= 0;
-		pipelineLayout.pSetLayouts				= nullptr;
+		pipelineLayout.setLayoutCount			= 1;
+		pipelineLayout.pSetLayouts				= &descriptorSetLayout;
 		pipelineLayout.pushConstantRangeCount	= 0;
 		pipelineLayout.pPushConstantRanges		= nullptr;
 
@@ -131,7 +131,7 @@ namespace Fable
 		globalUboDescriptorSetLayout.binding			= 0;
 		globalUboDescriptorSetLayout.descriptorCount	= 1;
 		globalUboDescriptorSetLayout.descriptorType		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		globalUboDescriptorSetLayout.pImmutableSamplers = 0;
+		globalUboDescriptorSetLayout.pImmutableSamplers = nullptr;
 		globalUboDescriptorSetLayout.stageFlags			= VK_SHADER_STAGE_VERTEX_BIT;
 
 		return globalUboDescriptorSetLayout;
@@ -147,38 +147,45 @@ namespace Fable
 		return descriptorSetLayoutInfo;
 	}
 
-	VkDescriptorPoolCreateInfo VulkanInitalizers::createDescriptorPool(uint32_t imageCount)
+	VkDescriptorPoolCreateInfo VulkanInitalizers::createDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount	= imageCount;
+		poolSize.descriptorCount	= 2;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount		= 1;
 		poolInfo.pPoolSizes			= &poolSize;
-		poolInfo.maxSets			= imageCount;
+		poolInfo.maxSets			= 2;
 
 		return poolInfo;
 	}
 
-	VkDescriptorSetAllocateInfo VulkanInitalizers::allocDescriptorSet(VkDescriptorPool descriptorPool, std::array<VkDescriptorSetLayout, 3> layouts)
+	std::vector<VkDescriptorSet> VulkanInitalizers::allocDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout layout, std::vector<VkDescriptorSet> descriptorSets)
 	{
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorSetCount = 3;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.pSetLayouts = layouts.data();
+		std::vector<VkDescriptorSetLayout> layouts(2, layout);
 
-		return allocInfo;
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool		= descriptorPool;
+		allocInfo.descriptorSetCount	= layouts.size();
+		allocInfo.pSetLayouts			= layouts.data();
+
+		descriptorSets.resize(2);
+		if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
+
+		return descriptorSets;
 	}
 
 	VkWriteDescriptorSet VulkanInitalizers::createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(Fable::RendererAPI::global_ubo);
+		bufferInfo.buffer	= uniformBuffer;
+		bufferInfo.offset	= 0;
+		bufferInfo.range	= sizeof(Fable::RendererAPI::global_ubo);
 
 		VkWriteDescriptorSet descriptorWrites{};
 		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

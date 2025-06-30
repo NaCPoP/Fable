@@ -39,7 +39,10 @@ namespace Fable
 		
 		m_Shader.reset(m_Shader->Create(m_Context.get()));
 		m_Shader->Load("../Fable/src/Shaders/vert1.spv", "../Fable/src/Shaders/frag1.spv");
-		//m_Shader->LoadUniformBuffer();
+
+		glm::mat4 projection = glm::perspective(glm::radians(90.0f), m_Window->GetWidth() / (float)m_Window->GetHeight(), 0.1f, 1000.0f);
+		glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		m_Shader->LoadUniformBuffer(projection, view);
 	}
 
 	Application::~Application()
