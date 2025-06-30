@@ -6,9 +6,7 @@ namespace Fable
 	class VulkanPipelineBuilder
 	{
 	public:
-		/*
-		* GRAPHICS PIPELINE
-		*/
+		//	GRAPHICS PIPELINE
 		VkViewport								m_Viewport;
 		VkRect2D								m_Scissor;
 
@@ -27,22 +25,9 @@ namespace Fable
 		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
 		VkPipeline m_GraphicsPipeline;
 
-		/*
-		* VERTEX BUFFERS
-		*/
+		//	VERTEX BUFFERS
 		VkVertexInputBindingDescription		m_BindingDescription;
 		VkVertexInputAttributeDescription	m_AttribbuteDescription;
-
-		/*
-		* UNIFORM BUFFERS
-		*/
-		VkDescriptorPool				m_DescriptorPool;
-		VkDescriptorSetLayout			m_DescriptorSetLayout;
-
-		VkDescriptorSetLayoutBinding	m_DescriptorSetLayoutBinding;
-		VkDescriptorSetLayoutCreateInfo m_DescriptorSetLayoutInfo;
-
-		VkDescriptorPoolCreateInfo		m_DescriptorPoolInfo;
 	public:
 		VkPipeline createGraphicsPipeline(VkDevice device, VkRenderPass renderPass);
 	};

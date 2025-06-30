@@ -7,6 +7,10 @@ layout(set = 0, binding = 0) uniform globalUniformObject {
     mat4 view;
 } globalUBO;
 
+layout(push_constant) uniform PushConstants{
+    mat4 model;
+} pushConstants;
+
 void main() {
-    gl_Position = globalUBO.projection * globalUBO.view * vec4(positions, 1.0);
+    gl_Position = globalUBO.projection * globalUBO.view * pushConstants.model * vec4(positions, 1.0);
 }

@@ -30,19 +30,21 @@ namespace Fable
 			{-0.5f,  0.5f, 0.0f},
 			{ 0.5f, -0.5f, 0.0f}
 		};
-		
+
 		m_VertexBuffer.reset(m_VertexBuffer->Create(m_Context.get(), vertices, sizeof(vertices)));
-		
+
 		uint32_t indices[6] = { 0, 1, 2, 0, 3, 1 };
-		
+
 		m_IndexBuffer.reset(m_IndexBuffer->Create(m_Context.get(), indices, sizeof(indices)));
-		
+
 		m_Shader.reset(m_Shader->Create(m_Context.get()));
 		m_Shader->Load("../Fable/src/Shaders/vert1.spv", "../Fable/src/Shaders/frag1.spv");
 
 		glm::mat4 projection = glm::perspective(glm::radians(90.0f), m_Window->GetWidth() / (float)m_Window->GetHeight(), 0.1f, 1000.0f);
 		glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		m_Shader->LoadUniformBuffer(projection, view);
+		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		m_Shader->LoadUniformBuffer(projection, view, model);
 	}
 
 	Application::~Application()

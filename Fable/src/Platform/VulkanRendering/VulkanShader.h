@@ -17,7 +17,7 @@ namespace Fable
 		void Bind() const override;
 		void Unbind() const override;
 		void Load(const std::string&& vertexFilePath, const std::string&& fragmentFilePath) override;
-		void LoadUniformBuffer(glm::mat4 projection, glm::mat4 view) override;
+		void LoadUniformBuffer(glm::mat4 projection, glm::mat4 view, glm::mat4 model) override;
 
 	private:
 		VulkanPipelineBuilder* m_PipelineBuilder;

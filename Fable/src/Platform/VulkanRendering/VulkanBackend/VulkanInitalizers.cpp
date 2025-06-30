@@ -91,15 +91,15 @@ namespace Fable
 		return colorBlendAttachment;
 	}
 
-	VkPipelineLayoutCreateInfo VulkanInitalizers::createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout)
+	VkPipelineLayoutCreateInfo VulkanInitalizers::createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout, VkPushConstantRange pushConstant)
 	{
 		VkPipelineLayoutCreateInfo pipelineLayout{};
 		pipelineLayout.sType					= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayout.flags					= 0;
 		pipelineLayout.setLayoutCount			= 1;
 		pipelineLayout.pSetLayouts				= &descriptorSetLayout;
-		pipelineLayout.pushConstantRangeCount	= 0;
-		pipelineLayout.pPushConstantRanges		= nullptr;
+		pipelineLayout.pushConstantRangeCount	= 1;
+		pipelineLayout.pPushConstantRanges		= &pushConstant;
 
 		return pipelineLayout;
 	}
@@ -197,5 +197,15 @@ namespace Fable
 		descriptorWrites.pBufferInfo = &bufferInfo;
 
 		return descriptorWrites;
+	}
+
+	VkPushConstantRange VulkanInitalizers::createPushConstantRange()
+	{
+		VkPushConstantRange pushConstant{};
+		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstant.offset		= sizeof(glm::mat4) * 0;
+		pushConstant.size		= sizeof(glm::mat4) * 2;
+
+		return pushConstant;
 	}
 }
