@@ -145,6 +145,10 @@ namespace Fable
 		void pickPhysicalDevice();
 		void createLogicalDevice();
 
+		// RESIZE WINDOW
+		void recreateSwapchain(uint32_t width, uint32_t height);
+		void cleanUpSwapchain();
+
 		inline QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(m_PhysicalDevice); }
 
 		// Helper Functions

@@ -72,7 +72,7 @@ project "Fable"
     filter "configurations:Release"
         defines "FB_RELEASE"
         runtime "Release"
-        optimize "on"
+        optimize "off"
 
     filter "configurations:Dist"
         defines "FB_DIST"

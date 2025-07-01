@@ -28,6 +28,8 @@ namespace Fable
 		depthStencil.depthCompareOp			= VK_COMPARE_OP_LESS;
 		depthStencil.depthBoundsTestEnable	= VK_FALSE;
 		depthStencil.stencilTestEnable		= VK_FALSE;
+		depthStencil.minDepthBounds			= 0.0f;
+		depthStencil.maxDepthBounds			= 1.0f;
 
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo{};
 		colorBlendInfo.sType				= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

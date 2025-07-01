@@ -9,6 +9,7 @@ namespace Fable
 	public:
 		void SetContext(GraphicsContext* context) override;
 		void SetClearColor(const glm::vec4& color) override;
+		void WindowResize(uint32_t width, uint32_t height) override;
 
 		void BeginRender() override;
 		void EndRender() override;

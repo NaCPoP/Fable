@@ -25,6 +25,7 @@ namespace Fable
 	public:
 		virtual void SetContext(GraphicsContext* context) = 0;
 		virtual void SetClearColor(const glm::vec4& color) = 0;
+		virtual void WindowResize(uint32_t width, uint32_t height) = 0;
 
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;

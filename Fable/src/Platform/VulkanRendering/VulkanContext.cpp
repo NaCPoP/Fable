@@ -8,7 +8,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../vendor/stb_image/stb_image.h"
 
-#ifdef FB_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -20,6 +19,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
+#ifdef FB_DEBUG
 VkResult CreateDebugUtilsMessengerEXT(
 	VkInstance instance,
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -545,6 +545,36 @@ namespace Fable
 
 		vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
 		vkGetDeviceQueue(m_Device, indices.presentFamily, 0, &m_PresentQueue);
+	}
+
+	void VulkanContext::recreateSwapchain(uint32_t width, uint32_t height)
+	{
+		vkDeviceWaitIdle(m_Device);
+		cleanUpSwapchain();
+
+		createSwapchain();
+		createImageViews();
+		//createDepthResources();
+		createFrameBuffers();
+	}
+
+	void VulkanContext::cleanUpSwapchain()
+	{
+		//vkDestroyImageView(m_VulkanDevices.device, m_DepthImageView, nullptr);
+		//vkDestroyImage(m_VulkanDevices.device, m_DepthImage, nullptr);
+		//vkFreeMemory(m_VulkanDevices.device, m_DepthImageMemory, nullptr);
+
+		for (auto framebuffer : m_FrameBuffers)
+		{
+			vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+		}
+
+		for (auto imageView : m_SwapchainImageViews)
+		{
+			vkDestroyImageView(m_Device, imageView, nullptr);
+		}
+
+		vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
 	}
 
 	std::vector<const char*> VulkanContext::getRequiredExtensions()

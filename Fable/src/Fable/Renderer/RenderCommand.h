@@ -13,9 +13,15 @@ namespace Fable
 		{
 			s_RendererAPI->SetContext(context);
 		}
+
 		inline static void SetClearColor(const glm::vec4& color)
 		{
 			s_RendererAPI->SetClearColor(color);
+		}
+
+		inline static void WindowResize(uint32_t width, uint32_t height)
+		{
+			s_RendererAPI->WindowResize(width, height);
 		}
 
 		inline static void BeginRender()

@@ -3,6 +3,11 @@
 
 namespace Fable
 {
+	void Renderer::WindowResize(uint32_t width, uint32_t height)
+	{
+		RenderCommand::WindowResize(width, height);
+	}
+
 	void Renderer::BeginScene(GraphicsContext* context)
 	{
 		RenderCommand::BeginRender();

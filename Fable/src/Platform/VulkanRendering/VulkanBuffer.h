@@ -37,7 +37,7 @@ namespace Fable
 
 	private:
 		VulkanContext* m_Context{ nullptr };
-		uint32_t *m_Indices;
+		uint32_t* m_Indices;
 	};
 }
 

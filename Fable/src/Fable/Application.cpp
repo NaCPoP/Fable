@@ -39,12 +39,6 @@ namespace Fable
 
 		m_Shader.reset(m_Shader->Create(m_Context.get()));
 		m_Shader->Load("../Fable/src/Shaders/vert1.spv", "../Fable/src/Shaders/frag1.spv");
-
-		glm::mat4 projection = glm::perspective(glm::radians(90.0f), m_Window->GetWidth() / (float)m_Window->GetHeight(), 0.1f, 1000.0f);
-		glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-		m_Shader->LoadUniformBuffer(projection, view, model);
 	}
 
 	Application::~Application()
@@ -55,11 +49,17 @@ namespace Fable
 	{
 		RenderCommand::SetClearColor({ 0.2f, 0.2f, 0.2f, 1.0f });
 
+		glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
 		while (m_Running)
 		{
+			glm::mat4 projection = glm::perspective(glm::radians(90.0f), m_Window->GetWidth() / (float)m_Window->GetHeight(), 0.1f, 1000.0f);
+
 			Renderer::BeginScene(m_Context.get());
 
 			m_Shader->Bind();
+			m_Shader->LoadUniformBuffer(projection, view, model);
 			Renderer::Submit(m_VertexBuffer.get(), m_IndexBuffer.get());
 			
 			Renderer::EndScene();
@@ -90,6 +90,15 @@ namespace Fable
 
 	bool Application::OnWindowResize(WindowResizeEvent& event)
 	{
-		return true;
+		if (event.GetWidth() == 0 || event.GetHeight() == 0)
+		{
+			m_Minimized = true;
+		}
+
+		m_Minimized = false;
+
+		Renderer::WindowResize(event.GetWidth(), event.GetHeight());
+
+		return false;
 	}
 }

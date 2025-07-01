@@ -16,6 +16,11 @@ namespace Fable
 		m_ClearColor = {color.r, color.g, color.b, color.a};
 	}
 
+	void VulkanRendererAPI::WindowResize(uint32_t width, uint32_t height)
+	{
+		m_Context->recreateSwapchain(width, height);
+	}
+
 	void VulkanRendererAPI::BeginRender()
 	{
 		vkWaitForFences(m_Context->m_Device, 1, &m_Context->m_RenderFence, VK_TRUE, UINT64_MAX);

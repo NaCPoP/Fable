@@ -15,7 +15,7 @@ namespace Fable
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
-		virtual void Load(const std::string&& vertexFilePath, const std::string&& fragmentFilePath) = 0;
+		virtual void Load(const std::string vertexFilePath, const std::string fragmentFilePath) = 0;
 
 		virtual void LoadUniformBuffer(glm::mat4 porjection, glm::mat4 view, glm::mat4 model) = 0;
 

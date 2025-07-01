@@ -8,6 +8,8 @@ namespace Fable
 	class Renderer
 	{
 	public:
+		static void WindowResize(uint32_t width, uint32_t height);
+
 		static void BeginScene(GraphicsContext* context);
 		static void EndScene();
 

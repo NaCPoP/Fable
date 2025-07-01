@@ -169,8 +169,8 @@ namespace Fable
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool		= descriptorPool;
-		allocInfo.descriptorSetCount	= layouts.size();
-		allocInfo.pSetLayouts			= layouts.data();
+		allocInfo.descriptorSetCount	= 1;
+		allocInfo.pSetLayouts			= &layout;
 
 		descriptorSets.resize(2);
 		if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
@@ -188,13 +188,13 @@ namespace Fable
 		bufferInfo.range	= sizeof(Fable::RendererAPI::global_ubo);
 
 		VkWriteDescriptorSet descriptorWrites{};
-		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites.dstSet = descriptorSet[imageIdx];
-		descriptorWrites.dstBinding = 0;
-		descriptorWrites.dstArrayElement = 0;
-		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites.descriptorCount = 1;
-		descriptorWrites.pBufferInfo = &bufferInfo;
+		descriptorWrites.sType				= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites.dstSet				= descriptorSet[imageIdx];
+		descriptorWrites.dstBinding			= 0;
+		descriptorWrites.dstArrayElement	= 0;
+		descriptorWrites.descriptorType		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites.descriptorCount	= 1;
+		descriptorWrites.pBufferInfo		= &bufferInfo;
 
 		return descriptorWrites;
 	}

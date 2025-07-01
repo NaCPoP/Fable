@@ -48,7 +48,7 @@ namespace Fable
 		vkDestroyShaderModule(m_Context->m_Device, m_FragShader, nullptr);
 	}
 
-	void VulkanShader::Load(const std::string&& vertexFilePath, const std::string&& fragmentFilePath)
+	void VulkanShader::Load(const std::string vertexFilePath, const std::string fragmentFilePath)
 	{
 		m_PipelineBuilder = new(VulkanPipelineBuilder);
 
@@ -95,24 +95,13 @@ namespace Fable
 		m_PipelineBuilder->m_PipelineLayout = m_PipelineLayout;
 
 		m_GraphicsPipeline = m_PipelineBuilder->createGraphicsPipeline(m_Context->m_Device, m_Context->m_RenderPass);
-	}
-
-	void VulkanShader::LoadUniformBuffer(glm::mat4 projection, glm::mat4 view, glm::mat4 model)
-	{
-		m_GlobalUbo.projection	= projection;
-		m_GlobalUbo.view		= view;
-		m_GlobalUbo.model		= model;
 
 		// UNIFORM BUFFERS
 		VkDeviceSize bufferSize = sizeof(m_GlobalUbo);
 
-		m_UniformBuffers.resize(2);
-		m_UniformBuffersMemory.resize(2);
-		m_UniformBuffersMapped.resize(2);
+		m_UniformBuffer = (VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBufferMemory));
 
-		m_UniformBuffers[0] = (VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBuffersMemory[0]));
-
-		vkMapMemory(m_Context->m_Device, m_UniformBuffersMemory[0], 0, bufferSize, 0, &m_UniformBuffersMapped[0]);
+		vkMapMemory(m_Context->m_Device, m_UniformBufferMemory, 0, bufferSize, 0, &m_UniformBufferMapped);
 
 		// DESCRIPTOR POOLS
 		m_DescriptorPoolInfo = VulkanInitalizers::createDescriptorPool();
@@ -121,23 +110,30 @@ namespace Fable
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 
-		memcpy(m_UniformBuffersMapped[m_Context->m_CurrentFrame], &m_GlobalUbo, sizeof(m_GlobalUbo));
-
 		m_DescriptorSets = VulkanInitalizers::allocDescriptorSet(m_Context->m_Device, m_DescriptorPool, m_DescriptorSetLayout, m_DescriptorSets);
+	}
+
+	void VulkanShader::LoadUniformBuffer(glm::mat4 projection, glm::mat4 view, glm::mat4 model)
+	{
+		m_GlobalUbo.projection	= projection;
+		m_GlobalUbo.view		= view;
+		m_GlobalUbo.model		= model;
+
+		memcpy(m_UniformBufferMapped, &m_GlobalUbo, sizeof(m_GlobalUbo));
 
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_UniformBuffers[0];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(m_GlobalUbo);
+		bufferInfo.buffer				= m_UniformBuffer;
+		bufferInfo.offset				= 0;
+		bufferInfo.range				= sizeof(m_GlobalUbo);
 
 		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_DescriptorSets[0];
-		descriptorWrite.dstBinding = 0;
+		descriptorWrite.sType			= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet			= m_DescriptorSets[0];
+		descriptorWrite.dstBinding		= 0;
 		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorType	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pBufferInfo		= &bufferInfo;
 
 		vkUpdateDescriptorSets(m_Context->m_Device, 1, &descriptorWrite, 0, nullptr);
 	}

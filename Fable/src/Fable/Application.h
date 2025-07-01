@@ -23,9 +23,10 @@ namespace Fable
 
 		void Run();
 		void OnEvent(Event& event);
-	private:
 
-		bool m_Running = true;
+	private:
+		bool m_Running		= true;
+		bool m_Minimized	= false;
 
 		LayerStack m_LayerStack;
 
