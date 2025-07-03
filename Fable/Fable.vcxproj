@@ -145,10 +145,12 @@
   <ItemGroup>
     <ClInclude Include="src\Fable.h" />
     <ClInclude Include="src\Fable\Application.h" />
+    <ClInclude Include="src\Fable\Camera.h" />
     <ClInclude Include="src\Fable\Core.h" />
     <ClInclude Include="src\Fable\EntryPoint.h" />
     <ClInclude Include="src\Fable\Events\ApplicationEvents.h" />
     <ClInclude Include="src\Fable\Events\Events.h" />
+    <ClInclude Include="src\Fable\Input.h" />
     <ClInclude Include="src\Fable\Layer.h" />
     <ClInclude Include="src\Fable\LayerStack.h" />
     <ClInclude Include="src\Fable\Renderer\Buffer.h" />
@@ -167,14 +169,17 @@
     <ClInclude Include="src\Platform\VulkanRendering\VulkanMain.h" />
     <ClInclude Include="src\Platform\VulkanRendering\VulkanRendererAPI.h" />
     <ClInclude Include="src\Platform\VulkanRendering\VulkanShader.h" />
+    <ClInclude Include="src\Platform\Windows\WindowsInput.h" />
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="src\fbpch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Fable\Application.cpp" />
+    <ClCompile Include="src\Fable\Camera.cpp" />
     <ClCompile Include="src\Fable\Layer.cpp" />
     <ClCompile Include="src\Fable\LayerStack.cpp" />
     <ClCompile Include="src\Fable\Renderer\Buffer.cpp" />
+    <ClCompile Include="src\Fable\Renderer\GraphicsContext.cpp" />
     <ClCompile Include="src\Fable\Renderer\RenderCommand.cpp" />
     <ClCompile Include="src\Fable\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Fable\Renderer\RendererAPI.cpp" />
@@ -188,6 +193,7 @@
     <ClCompile Include="src\Platform\VulkanRendering\VulkanMain.cpp" />
     <ClCompile Include="src\Platform\VulkanRendering\VulkanRendererAPI.cpp" />
     <ClCompile Include="src\Platform\VulkanRendering\VulkanShader.cpp" />
+    <ClCompile Include="src\Platform\Windows\WindowsInput.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="src\fbpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

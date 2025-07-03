@@ -26,9 +26,6 @@ namespace Fable
 	class VulkanIndexBuffer : public IndexBuffer
 	{
 	public:
-		std::vector<VkBuffer> m_IndexBuffers;
-		uint32_t m_Count;
-	public:
 		VulkanIndexBuffer(GraphicsContext* context, uint32_t* indices, uint32_t count);
 		virtual ~VulkanIndexBuffer();
 
@@ -36,8 +33,10 @@ namespace Fable
 		virtual void Unbind() const override;
 
 	private:
-		VulkanContext* m_Context{ nullptr };
-		uint32_t* m_Indices;
+		VulkanContext*	m_Context{ nullptr };
+		VkBuffer		m_IndexBuffer;
+		uint32_t*		m_Indices;
+		uint32_t		m_Count;
 	};
 }
 

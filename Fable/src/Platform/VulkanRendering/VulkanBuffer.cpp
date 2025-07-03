@@ -38,6 +38,10 @@ namespace Fable
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
+		for (VkBuffer buffer : m_VertexBuffers)
+		{
+			vkDestroyBuffer(m_Context->m_Device, buffer, nullptr);
+		}
 	}
 
 	void VulkanVertexBuffer::Bind() const
@@ -48,6 +52,7 @@ namespace Fable
 
 	void VulkanVertexBuffer::Unbind() const
 	{
+		VulkanVertexBuffer::~VulkanVertexBuffer();
 	}
 
 	// ----------------------------------------------------------------------------------------------
@@ -74,11 +79,11 @@ namespace Fable
 		memcpy(data, m_Indices, (size_t)bufferSize);
 		vkUnmapMemory(m_Context->m_Device, stagingBufferMemory);
 
-		m_IndexBuffers.emplace_back(VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice,
+		m_IndexBuffer = VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice,
 			bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			m_Context->m_IndexBufferMemory));
+			m_Context->m_IndexBufferMemory);
 
-		VulkanUtilities::copyBuffer(stagingBuffer, m_IndexBuffers.back(), bufferSize, m_Context->m_CommandPool,
+		VulkanUtilities::copyBuffer(stagingBuffer, m_IndexBuffer, bufferSize, m_Context->m_CommandPool,
 			m_Context->m_Device, m_Context->m_GraphicsQueue);
 
 		vkDestroyBuffer(m_Context->m_Device, stagingBuffer, nullptr);
@@ -87,14 +92,16 @@ namespace Fable
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
 	{
+		vkDestroyBuffer(m_Context->m_Device, m_IndexBuffer, nullptr);
 	}
 
 	void VulkanIndexBuffer::Bind() const
 	{
-		vkCmdBindIndexBuffer(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], *m_IndexBuffers.data(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	}
 
 	void VulkanIndexBuffer::Unbind() const
 	{
+		VulkanIndexBuffer::~VulkanIndexBuffer();
 	}
 }

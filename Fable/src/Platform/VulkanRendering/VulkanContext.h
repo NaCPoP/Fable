@@ -17,6 +17,7 @@
 #include <limits>
 #include <optional>
 #include <vulkan/vulkan_core.h>
+#include <Fable/Window.h>
 
 struct GLFWwindow;
 
@@ -46,29 +47,17 @@ namespace Fable
 		friend class VulkanRendererAPI;
 
 	public:
-		VulkanContext(GLFWwindow* window);
+		VulkanContext(Window* window, RendererSettings settings);
 		~VulkanContext();
 
-		virtual void Init(RendererSettings settings) override;
 		virtual void Shutdown() override;
 		virtual void SwapBuffers() override;
-		virtual void Draw() override;
-
-		/*
-		* NEW
-		*/
 		
 	
 	private:
-		/*
-		*	ORGANISE LATER (KEEP)
-		*/
-
+		// TODO: Organize
 		uint32_t m_IndicesCount = 0;
 
-		/*
-		* 
-		*/
 		GLFWwindow*			m_Window;
 		RendererSettings	m_Settings;
 		uint32_t			m_CurrentFrame = 0;

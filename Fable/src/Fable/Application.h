@@ -6,10 +6,7 @@
 #include "Renderer/Shader.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/GraphicsContext.h"
-
-#include "Platform/VulkanRendering/VulkanContext.h"
-
-//#include "Renderer/Buffer.h"
+#include "Camera.h"
 
 #include <memory>
 
@@ -24,7 +21,12 @@ namespace Fable
 		void Run();
 		void OnEvent(Event& event);
 
+		static Application& Get() { return *s_Instance; }
+		Window& GetWindow() { return *m_Window; }
+
 	private:
+		static Application* s_Instance;
+
 		bool m_Running		= true;
 		bool m_Minimized	= false;
 
@@ -38,6 +40,9 @@ namespace Fable
 		std::unique_ptr<Shader> m_Shader;
 		std::unique_ptr<VertexBuffer> m_VertexBuffer;
 		std::unique_ptr<IndexBuffer> m_IndexBuffer;
+
+		// CAMERA
+		PerspectiveCamera m_Camera;
 	};
 
 	Application* CreateApplication();

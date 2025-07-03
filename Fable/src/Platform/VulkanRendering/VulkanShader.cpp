@@ -16,7 +16,8 @@ namespace Fable
 
 	VulkanShader::~VulkanShader()
 	{
-
+		vkDestroyShaderModule(m_Context->m_Device, m_VertShader, nullptr);
+		vkDestroyShaderModule(m_Context->m_Device, m_FragShader, nullptr);
 	}
 
 	void VulkanShader::Bind() const
@@ -44,8 +45,7 @@ namespace Fable
 
 	void VulkanShader::Unbind() const
 	{
-		vkDestroyShaderModule(m_Context->m_Device, m_VertShader, nullptr);
-		vkDestroyShaderModule(m_Context->m_Device, m_FragShader, nullptr);
+		VulkanShader::~VulkanShader();
 	}
 
 	void VulkanShader::Load(const std::string vertexFilePath, const std::string fragmentFilePath)

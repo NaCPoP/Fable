@@ -23,7 +23,7 @@ namespace Fable
 		inline void SetVSync(bool enabled) override;
 		inline bool GetVSync() const override;
 	
-		inline virtual std::any GetNativeWindow() const { return m_Window; }		
+		inline virtual void* GetNativeWindow() const { return m_Window; }		
 
 	private: // FUNCTIONS
 		virtual void Init(const WindowProps& props);

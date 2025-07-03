@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fable/Core.h"
+#include <Fable/Window.h>
 
 namespace Fable
 {
@@ -12,9 +13,8 @@ namespace Fable
 	class GraphicsContext
 	{
 	public:
-		virtual void Init(RendererSettings settings) = 0;
+		static GraphicsContext* Create(Window* window, RendererSettings settings);
 		virtual void Shutdown() = 0;
 		virtual void SwapBuffers() = 0;
-		virtual void Draw() = 0;
 	};
 }

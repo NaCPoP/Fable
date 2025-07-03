@@ -29,6 +29,7 @@ namespace Fable
 		{
 			throw std::runtime_error("Failed to aquire swapchain image!");
 		}
+
 		vkResetFences(m_Context->m_Device, 1, &m_Context->m_RenderFence);
 		vkResetCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], 0);
 
@@ -47,16 +48,16 @@ namespace Fable
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &m_Context->m_PresentSemaphore;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_Context->m_CommandBuffers[m_CurrentFrame];
+		submitInfo.sType				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount	= 1;
+		submitInfo.pWaitSemaphores		= &m_Context->m_PresentSemaphore;
+		submitInfo.pWaitDstStageMask	= waitStages;
+		submitInfo.commandBufferCount	= 1;
+		submitInfo.pCommandBuffers		= &m_Context->m_CommandBuffers[m_CurrentFrame];
 
-		VkSemaphore signalSemaphores[] = { m_Context->m_RenderSemaphore };
+		VkSemaphore signalSemaphores[]	= { m_Context->m_RenderSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
+		submitInfo.pSignalSemaphores	= signalSemaphores;
 
 		if (vkQueueSubmit(m_Context->m_GraphicsQueue, 1, &submitInfo, m_Context->m_RenderFence) != VK_SUCCESS)
 		{
@@ -64,15 +65,15 @@ namespace Fable
 		}
 
 		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
+		presentInfo.sType				= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount	= 1;
+		presentInfo.pWaitSemaphores		= signalSemaphores;
 
-		VkSwapchainKHR swapchains[] = { m_Context->m_Swapchain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapchains;
-		presentInfo.pImageIndices = &m_Context->m_ImageIndex;
-		presentInfo.pResults = nullptr;
+		VkSwapchainKHR swapchains[]		= { m_Context->m_Swapchain };
+		presentInfo.swapchainCount		= 1;
+		presentInfo.pSwapchains			= swapchains;
+		presentInfo.pImageIndices		= &m_Context->m_ImageIndex;
+		presentInfo.pResults			= nullptr;
 
 		if (vkQueuePresentKHR(m_Context->m_PresentQueue, &presentInfo) != VK_SUCCESS)
 		{
@@ -85,12 +86,12 @@ namespace Fable
 
 	void VulkanRendererAPI::DrawIndexed(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
 	{
-		auto vertBuffers = static_cast<VulkanVertexBuffer*>(vertexBuffer);
-		auto idxBuffers = static_cast<VulkanIndexBuffer*>(indexBuffer);
+		auto vertBuffers	= static_cast<VulkanVertexBuffer*>(vertexBuffer);
+		auto idxBuffers		= static_cast<VulkanIndexBuffer*>(indexBuffer);
 
 		vertBuffers->Bind();
 		idxBuffers->Bind();
 
-		vkCmdDrawIndexed(m_Context->m_CommandBuffers[m_CurrentFrame], idxBuffers->m_Count, 1, 0, 0, 0);
+		vkCmdDrawIndexed(m_Context->m_CommandBuffers[m_CurrentFrame], m_Context->m_IndicesCount, 1, 0, 0, 0);
 	}
 }

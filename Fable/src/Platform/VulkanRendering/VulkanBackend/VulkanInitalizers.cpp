@@ -202,7 +202,7 @@ namespace Fable
 	VkPushConstantRange VulkanInitalizers::createPushConstantRange()
 	{
 		VkPushConstantRange pushConstant{};
-		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstant.offset		= sizeof(glm::mat4) * 0;
 		pushConstant.size		= sizeof(glm::mat4) * 2;
 

@@ -3,13 +3,21 @@
 #include "Application.h"
 #include "Fable/Core.h"
 #include "Fable/Renderer/Renderer.h"
+#include "Platform/VulkanRendering/VulkanContext.h"
 
 #include "glm/glm.hpp"
 
+#include "Input.h"
+
 namespace Fable
 {
-	Application::Application()
+	Application* Application::s_Instance = nullptr;
+
+	Application::Application() : m_Camera(45.0f, 1280/(float)720, -1.0f, 1.0f)
 	{
+		s_Instance = this;
+
+		// TODO: Move into Sandbox.cpp
 		RendererSettings settings
 		{
 
@@ -18,8 +26,7 @@ namespace Fable
 		m_Window = std::unique_ptr<Window>(Window::WindowCreate());
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
-		m_Context.reset(new VulkanContext(any_cast<GLFWwindow*>(m_Window->GetNativeWindow())));
-		m_Context->Init(settings);
+		m_Context.reset(m_Context->Create(m_Window.get(), settings));
 
 		RenderCommand::SetContext(m_Context.get());
 
@@ -49,20 +56,45 @@ namespace Fable
 	{
 		RenderCommand::SetClearColor({ 0.2f, 0.2f, 0.2f, 1.0f });
 
-		glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		m_Camera.SetPostition({ 0.0f,  0.0f, 2.0f });
+		m_Camera.SetRotation(0.0f);
+		m_Camera.SetCenter({ 0.0f,  0.0f, 0.0f });
+
+		float z = 0;
+		float x = 0;
 
 		while (m_Running)
 		{
-			glm::mat4 projection = glm::perspective(glm::radians(90.0f), m_Window->GetWidth() / (float)m_Window->GetHeight(), 0.1f, 1000.0f);
-
 			Renderer::BeginScene(m_Context.get());
 
 			m_Shader->Bind();
-			m_Shader->LoadUniformBuffer(projection, view, model);
+			m_Shader->LoadUniformBuffer(m_Camera.GetProjectionMatrix(), m_Camera.GetViewMatrix(), model);
 			Renderer::Submit(m_VertexBuffer.get(), m_IndexBuffer.get());
 			
 			Renderer::EndScene();
+
+			if (Input::IsKeyPressed(GLFW_KEY_W))
+			{
+				z -= 0.0001;
+				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+			}
+			else if (Input::IsKeyPressed(GLFW_KEY_S))
+			{
+				z += 0.0001;
+				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+			}
+			else if (Input::IsKeyPressed(GLFW_KEY_A))
+			{
+				x -= 0.0001;
+				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+			}
+			else if (Input::IsKeyPressed(GLFW_KEY_D))
+			{
+				x += 0.0001;
+				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+			}
 
 			m_Window->OnUpdate();
 		}
@@ -98,6 +130,7 @@ namespace Fable
 		m_Minimized = false;
 
 		Renderer::WindowResize(event.GetWidth(), event.GetHeight());
+		m_Camera.SetAspect(event.GetWidth()/ (float)event.GetHeight());
 
 		return false;
 	}

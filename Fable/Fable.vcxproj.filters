@@ -28,6 +28,9 @@
     <ClInclude Include="src\Fable\Application.h">
       <Filter>Fable</Filter>
     </ClInclude>
+    <ClInclude Include="src\Fable\Camera.h">
+      <Filter>Fable</Filter>
+    </ClInclude>
     <ClInclude Include="src\Fable\Core.h">
       <Filter>Fable</Filter>
     </ClInclude>
@@ -39,6 +42,9 @@
     </ClInclude>
     <ClInclude Include="src\Fable\Events\Events.h">
       <Filter>Fable\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\Input.h">
+      <Filter>Fable</Filter>
     </ClInclude>
     <ClInclude Include="src\Fable\Layer.h">
       <Filter>Fable</Filter>
@@ -94,6 +100,9 @@
     <ClInclude Include="src\Platform\VulkanRendering\VulkanShader.h">
       <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
+    <ClInclude Include="src\Platform\Windows\WindowsInput.h">
+      <Filter>Platform\Windows</Filter>
+    </ClInclude>
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
       <Filter>Platform\Windows</Filter>
     </ClInclude>
@@ -103,6 +112,9 @@
     <ClCompile Include="src\Fable\Application.cpp">
       <Filter>Fable</Filter>
     </ClCompile>
+    <ClCompile Include="src\Fable\Camera.cpp">
+      <Filter>Fable</Filter>
+    </ClCompile>
     <ClCompile Include="src\Fable\Layer.cpp">
       <Filter>Fable</Filter>
     </ClCompile>
@@ -110,6 +122,9 @@
       <Filter>Fable</Filter>
     </ClCompile>
     <ClCompile Include="src\Fable\Renderer\Buffer.cpp">
+      <Filter>Fable\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fable\Renderer\GraphicsContext.cpp">
       <Filter>Fable\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Fable\Renderer\RenderCommand.cpp">
@@ -150,6 +165,9 @@
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanShader.cpp">
       <Filter>Platform\VulkanRendering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\Windows\WindowsInput.cpp">
+      <Filter>Platform\Windows</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
       <Filter>Platform\Windows</Filter>

@@ -32,7 +32,7 @@ namespace Fable
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool GetVSync() const = 0;
 
-		virtual std::any GetNativeWindow() const = 0;
+		virtual void* GetNativeWindow() const = 0;
 
 		static Window* WindowCreate(const WindowProps& props = WindowProps());
 	};

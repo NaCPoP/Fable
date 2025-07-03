@@ -54,22 +54,13 @@ void DestroyDebugUtilsMessengerEXT(
 
 namespace Fable
 {
-	VulkanContext::VulkanContext(GLFWwindow* window) : m_Window(window)
+	VulkanContext::VulkanContext(Window* window, RendererSettings settings) : m_Window(static_cast<GLFWwindow*>(window->GetNativeWindow())), m_Settings(settings)
 	{
 		if (window == NULL)
 		{
 			throw std::runtime_error("Window is null!");
 		}
-	}
 
-	VulkanContext::~VulkanContext()
-	{
-		Shutdown();
-	}
-
-	void VulkanContext::Init(RendererSettings settings)
-	{	
-		m_Settings = settings;
 		initCore();
 		createSwapchain();
 		createImageViews();
@@ -78,7 +69,11 @@ namespace Fable
 		createFrameBuffers();
 		createSyncStructures();
 		createCommandBuffers();
-		//SwapBuffers();
+	}
+
+	VulkanContext::~VulkanContext()
+	{
+		Shutdown();
 	}
 
 	void VulkanContext::Shutdown()
@@ -116,112 +111,6 @@ namespace Fable
 		vkResetFences(m_Device, 1, &m_RenderFence);
 
 		vkResetCommandBuffer(m_CommandBuffers[0], 0);
-	}
-
-	void VulkanContext::Draw()
-	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		if (vkBeginCommandBuffer(m_CommandBuffers[0], &beginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to begin command buffer!");
-		}
-
-		VkClearValue clearValue{ {0.2f, 0.2f, 0.2, 1.0f} };
-
-
-		/* -------------------------------------------------------------------------------------
-		*  MOVE TO RENDERER
-		*/
-		VkRenderPassBeginInfo renderPassBeginInfo{};
-		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = m_RenderPass;
-		renderPassBeginInfo.renderArea.offset = { 0, 0 };
-		renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
-		renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
-		renderPassBeginInfo.clearValueCount = 1;
-		renderPassBeginInfo.pClearValues = &clearValue;
-		
-		vkCmdBeginRenderPass(m_CommandBuffers[0], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		// -------------------------------------------------------------------------------------
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = (float)m_SwapchainExtent.height;
-		viewport.width = (float)m_SwapchainExtent.width;
-		viewport.height = -(float)m_SwapchainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(m_CommandBuffers[0], 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = m_SwapchainExtent;
-		vkCmdSetScissor(m_CommandBuffers[0], 0, 1, &scissor);
-
-		VkDeviceSize offsets[] = { 0 };
-		for (int i = 0; i < m_GraphicsPipelines.size(); i++)
-		{
-			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipelines[i]);
-
-			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, &m_VertexBuffers[i], offsets);
-
-			vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffers[i], 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1,
-				&m_GlobalDescriptorSets[i], 0, nullptr);
-
-			vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(6), 1, 0, 0, 0);
-		}
-		
-		vkCmdEndRenderPass(m_CommandBuffers[0]);
-
-		if (vkEndCommandBuffer(m_CommandBuffers[0]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to end command Buffer!");
-		}
-
-		m_WriteDescriptorSet = VulkanInitalizers::createDescriptorSets(m_UniformBuffer, m_GlobalDescriptorSets, m_ImageIndex);
-		vkUpdateDescriptorSets(m_Device, 1, &m_WriteDescriptorSet, 0, 0);
-
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &m_PresentSemaphore;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffers[0];
-
-		VkSemaphore signalSemaphores[] = { m_RenderSemaphore };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_RenderFence) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to submit draw command to buffer!");
-		}
-
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapchains[] = { m_Swapchain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapchains;
-		presentInfo.pImageIndices = &m_ImageIndex;
-		presentInfo.pResults = nullptr;
-
-		if (vkQueuePresentKHR(m_PresentQueue, &presentInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("");
-		}
-
-		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void VulkanContext::initCore()
