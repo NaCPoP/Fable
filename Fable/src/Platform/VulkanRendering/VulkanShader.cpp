@@ -23,12 +23,12 @@ namespace Fable
 	void VulkanShader::Bind() const
 	{
 		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = (float)m_Context->m_SwapchainExtent.height;
-		viewport.width = (float)m_Context->m_SwapchainExtent.width;
-		viewport.height = -(float)m_Context->m_SwapchainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		viewport.x			= 0.0f;
+		viewport.y			= (float)m_Context->m_SwapchainExtent.height;
+		viewport.width		= (float)m_Context->m_SwapchainExtent.width;
+		viewport.height		= -(float)m_Context->m_SwapchainExtent.height;
+		viewport.minDepth	= 0.0f;
+		viewport.maxDepth	= 1.0f;
 		vkCmdSetViewport(m_Context->m_CommandBuffers[m_Context->m_CurrentFrame], 0, 1, &viewport);
 
 		VkRect2D scissor{};

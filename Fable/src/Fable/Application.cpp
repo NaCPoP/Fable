@@ -13,7 +13,7 @@ namespace Fable
 {
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application() : m_Camera(45.0f, 1280/(float)720, -1.0f, 1.0f)
+	Application::Application() : m_Camera(45.0f, 1280/(float)720, 0.1f, 1000.0f)
 	{
 		s_Instance = this;
 
@@ -58,7 +58,7 @@ namespace Fable
 
 		glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		m_Camera.SetPostition({ 0.0f,  0.0f, 2.0f });
+		m_Camera.SetPostition({ 0.0f,  0.0f, -10.0f });
 		m_Camera.SetRotation(0.0f);
 		m_Camera.SetCenter({ 0.0f,  0.0f, 0.0f });
 
@@ -77,23 +77,23 @@ namespace Fable
 
 			if (Input::IsKeyPressed(GLFW_KEY_W))
 			{
-				z -= 0.0001;
-				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+				z += 0.001;
+				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
 			else if (Input::IsKeyPressed(GLFW_KEY_S))
 			{
-				z += 0.0001;
-				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+				z -= 0.001;
+				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
-			else if (Input::IsKeyPressed(GLFW_KEY_A))
+			if (Input::IsKeyPressed(GLFW_KEY_A))
 			{
-				x -= 0.0001;
-				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+				x -= 0.001;
+				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
 			else if (Input::IsKeyPressed(GLFW_KEY_D))
 			{
-				x += 0.0001;
-				m_Camera.SetPostition({ x, 0.0f, 2.0f + z });
+				x += 0.001;
+				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
 
 			m_Window->OnUpdate();
