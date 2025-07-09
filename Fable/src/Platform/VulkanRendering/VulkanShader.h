@@ -1,7 +1,6 @@
 #pragma once
 #include "Fable/Renderer/Shader.h"
 
-#include "VulkanMain.h"
 #include "VulkanContext.h"
 #include "VulkanBackend/VulkanPipelineBuilder.h"
 #include "Fable/Renderer/RendererAPI.h"

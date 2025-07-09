@@ -26,7 +26,6 @@ namespace Fable
 		static VkDescriptorSetLayoutCreateInfo createDescriptorLayoutInfo(VkDescriptorSetLayoutBinding layoutInfo);
 		static VkDescriptorPoolCreateInfo createDescriptorPool();
 		static std::vector<VkDescriptorSet> allocDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout layout, std::vector<VkDescriptorSet> descriptorSets);
-		static VkWriteDescriptorSet createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx);
 
 		//	PUSH CONSTANTS
 		static VkPushConstantRange createPushConstantRange();

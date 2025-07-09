@@ -22,8 +22,8 @@ namespace Fable
 		VkClearValue m_ClearColor;
 
 		// FRAME INFO
-		const uint8_t m_MaxFramesInFlight = 2;
-		uint32_t m_CurrentFrame = 0;
+		const uint8_t m_MaxFramesInFlight	= 2;
+		uint32_t m_CurrentFrame				= 0;
 		uint32_t m_ImageIndex;
 	};
 }

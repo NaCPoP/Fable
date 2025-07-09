@@ -150,7 +150,7 @@ namespace Fable
 	VkDescriptorPoolCreateInfo VulkanInitalizers::createDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSize{};
-		poolSize[0].type				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize[0].type			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSize[0].descriptorCount	= 2;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
@@ -178,25 +178,6 @@ namespace Fable
 		}
 
 		return descriptorSets;
-	}
-
-	VkWriteDescriptorSet VulkanInitalizers::createDescriptorSets(VkBuffer uniformBuffer, std::vector<VkDescriptorSet> descriptorSet, int imageIdx)
-	{
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer	= uniformBuffer;
-		bufferInfo.offset	= 0;
-		bufferInfo.range	= sizeof(Fable::RendererAPI::global_ubo);
-
-		VkWriteDescriptorSet descriptorWrites{};
-		descriptorWrites.sType				= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites.dstSet				= descriptorSet[imageIdx];
-		descriptorWrites.dstBinding			= 0;
-		descriptorWrites.dstArrayElement	= 0;
-		descriptorWrites.descriptorType		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites.descriptorCount	= 1;
-		descriptorWrites.pBufferInfo		= &bufferInfo;
-
-		return descriptorWrites;
 	}
 
 	VkPushConstantRange VulkanInitalizers::createPushConstantRange()

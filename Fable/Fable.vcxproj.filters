@@ -43,6 +43,12 @@
     <ClInclude Include="src\Fable\Events\Events.h">
       <Filter>Fable\Events</Filter>
     </ClInclude>
+    <ClInclude Include="src\Fable\Events\KeyEvents.h">
+      <Filter>Fable\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\Events\MouseEvents.h">
+      <Filter>Fable\Events</Filter>
+    </ClInclude>
     <ClInclude Include="src\Fable\Input.h">
       <Filter>Fable</Filter>
     </ClInclude>
@@ -89,9 +95,6 @@
       <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\VulkanRendering\VulkanContext.h">
-      <Filter>Platform\VulkanRendering</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Platform\VulkanRendering\VulkanMain.h">
       <Filter>Platform\VulkanRendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\VulkanRendering\VulkanRendererAPI.h">
@@ -151,13 +154,13 @@
     <ClCompile Include="src\Platform\VulkanRendering\VulkanBackend\VulkanWrapper.cpp">
       <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
     </ClCompile>
+    <ClCompile Include="src\Platform\VulkanRendering\VulkanBackend\imGuiTemp.cpp">
+      <Filter>Platform\VulkanRendering\VulkanBackend</Filter>
+    </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanBuffer.cpp">
       <Filter>Platform\VulkanRendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanContext.cpp">
-      <Filter>Platform\VulkanRendering</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Platform\VulkanRendering\VulkanMain.cpp">
       <Filter>Platform\VulkanRendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\VulkanRendering\VulkanRendererAPI.cpp">

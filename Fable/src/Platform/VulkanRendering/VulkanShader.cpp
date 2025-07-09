@@ -5,6 +5,7 @@
 #include "VulkanBackend/VulkanInitalizers.h"
 #include "VulkanBackend/VulkanPipelineBuilder.h"
 #include "Fable/Renderer/Renderer.h"
+#include "VulkanContext.cpp"
 
 namespace Fable
 {
@@ -121,21 +122,21 @@ namespace Fable
 
 		m_DescriptorSets = VulkanInitalizers::allocDescriptorSet(m_Context->m_Device, m_DescriptorPool, m_DescriptorSetLayout, m_DescriptorSets);
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_UniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(m_GlobalUbo);
+			bufferInfo.buffer	= m_UniformBuffers[i];
+			bufferInfo.offset	= 0;
+			bufferInfo.range	= sizeof(m_GlobalUbo);
 
 			VkWriteDescriptorSet descriptorWrite{};
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = m_DescriptorSets[i];
-			descriptorWrite.dstBinding = 0;
+			descriptorWrite.sType			= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet			= m_DescriptorSets[i];
+			descriptorWrite.dstBinding		= 0;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorType	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrite.descriptorCount = 1;
-			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pBufferInfo		= &bufferInfo;
 
 			vkUpdateDescriptorSets(m_Context->m_Device, 1, &descriptorWrite, 0, nullptr);
 		}

@@ -13,6 +13,7 @@ workspace "Fable"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 include "Fable/vendor/GLFW"
+include "Fable/vendor/imgui"
 
 project "Fable"
     location "Fable"
@@ -37,6 +38,7 @@ project "Fable"
     {
         "Fable/src",
         "Fable/vendor/GLFW/include",
+        "Fable/vendor/imgui",
         "Fable/vendor/glm",
         "Fable/vendor/stb-image",
         "Fable/vendor/tiny_object_loader",
@@ -51,6 +53,7 @@ project "Fable"
     links 
     {
         "GLFW",
+        "ImGui",
         "vulkan-1.lib"
     }
 
@@ -72,7 +75,7 @@ project "Fable"
     filter "configurations:Release"
         defines "FB_RELEASE"
         runtime "Release"
-        optimize "off"
+        optimize "on"
 
     filter "configurations:Dist"
         defines "FB_DIST"

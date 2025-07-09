@@ -8,6 +8,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../vendor/stb_image/stb_image.h"
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -18,6 +21,16 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 	return VK_FALSE;
 }
+
+static void check_vk_result(VkResult err)
+{
+	if (err == 0)
+		return;
+	fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+	if (err < 0)
+		abort();
+}
+
 
 #ifdef FB_DEBUG
 VkResult CreateDebugUtilsMessengerEXT(
@@ -69,6 +82,8 @@ namespace Fable
 		createFrameBuffers();
 		createSyncStructures();
 		createCommandBuffers();
+
+		InitImgui();
 	}
 
 	VulkanContext::~VulkanContext()
@@ -111,6 +126,11 @@ namespace Fable
 		vkResetFences(m_Device, 1, &m_RenderFence[0]);
 
 		vkResetCommandBuffer(m_CommandBuffers[0], 0);
+	}
+
+	VkCommandBuffer VulkanContext::getCmdBuffer()
+	{
+		return m_CommandBuffers[m_CurrentFrame];
 	}
 
 	void VulkanContext::initCore()
@@ -439,6 +459,81 @@ namespace Fable
 
 		vkGetDeviceQueue(m_Device, indices.graphicsFamily, 0, &m_GraphicsQueue);
 		vkGetDeviceQueue(m_Device, indices.presentFamily, 0, &m_PresentQueue);
+	}
+
+	void VulkanContext::InitImgui()
+	{
+		VkDescriptorPoolSize pool_sizes[] =
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = 1000;
+		pool_info.poolSizeCount = std::size(pool_sizes);
+		pool_info.pPoolSizes = pool_sizes;
+
+		VkDescriptorPool imguiPool;
+		if (vkCreateDescriptorPool(m_Device, &pool_info, nullptr, &imguiPool) != VK_SUCCESS) 
+		{
+			throw std::runtime_error("Failed to create descriptor set!");
+		}
+
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+		ImGui::StyleColorsDark();
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+
+		Application& app = Application::Get();
+		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+
+		ImGui_ImplGlfw_InitForVulkan(window, true);
+
+		ImGui_ImplVulkan_InitInfo m_ImGuiInfo = {};
+		m_ImGuiInfo.Instance = m_Instance;
+		m_ImGuiInfo.PhysicalDevice = m_PhysicalDevice;
+		m_ImGuiInfo.Device = m_Device;
+		m_ImGuiInfo.Queue = m_GraphicsQueue;
+		m_ImGuiInfo.DescriptorPool = imguiPool;
+		m_ImGuiInfo.Subpass = 0;
+		m_ImGuiInfo.MinImageCount = 2;
+		m_ImGuiInfo.ImageCount = 2;
+		m_ImGuiInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		m_ImGuiInfo.Allocator = NULL;
+		m_ImGuiInfo.CheckVkResultFn = check_vk_result;
+
+		ImGui_ImplVulkan_Init(&m_ImGuiInfo, m_RenderPass);
+
+
+		VkCommandBuffer cmd = VulkanUtilities::beginSingleTimeCommands(m_CommandPool, m_Device);
+		ImGui_ImplVulkan_CreateFontsTexture(cmd);
+		VulkanUtilities::endSingleTimeCommands(cmd, m_CommandPool, m_Device, m_GraphicsQueue);
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
 	void VulkanContext::recreateSwapchain(uint32_t width, uint32_t height)

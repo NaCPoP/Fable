@@ -67,12 +67,36 @@ namespace Fable
 
 		while (m_Running)
 		{
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+
+			ImGui::NewFrame();
+
+			//imgui commands
+			bool show = true;
+			ImGui::ShowDemoWindow(&show);
+
+			ImGuiIO& io = ImGui::GetIO();
+			Application& app = Application::Get();
+			io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
+
+			ImGui::Render();
+
 			Renderer::BeginScene(m_Context.get());
 
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VulkanContext*>(m_Context.get())->getCmdBuffer());
 			m_Shader->Bind();
 			m_Shader->LoadUniformBuffer(m_Camera.GetProjectionMatrix(), m_Camera.GetViewMatrix(), model);
 			Renderer::Submit(m_VertexBuffer.get(), m_IndexBuffer.get());
 			
+			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				GLFWwindow* backup_current_context = glfwGetCurrentContext();
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault();
+				glfwMakeContextCurrent(backup_current_context);
+			}
+
 			Renderer::EndScene();
 
 			if (Input::IsKeyPressed(GLFW_KEY_W))
