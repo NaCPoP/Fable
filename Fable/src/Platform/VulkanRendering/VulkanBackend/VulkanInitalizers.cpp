@@ -149,14 +149,14 @@ namespace Fable
 
 	VkDescriptorPoolCreateInfo VulkanInitalizers::createDescriptorPool()
 	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount	= 2;
+		std::array<VkDescriptorPoolSize, 2> poolSize{};
+		poolSize[0].type				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize[0].descriptorCount	= 2;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount		= 1;
-		poolInfo.pPoolSizes			= &poolSize;
+		poolInfo.pPoolSizes			= &poolSize[0];
 		poolInfo.maxSets			= 2;
 
 		return poolInfo;
@@ -169,8 +169,8 @@ namespace Fable
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool		= descriptorPool;
-		allocInfo.descriptorSetCount	= 1;
-		allocInfo.pSetLayouts			= &layout;
+		allocInfo.descriptorSetCount	= 2;
+		allocInfo.pSetLayouts			= layouts.data();
 
 		descriptorSets.resize(2);
 		if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
@@ -202,7 +202,7 @@ namespace Fable
 	VkPushConstantRange VulkanInitalizers::createPushConstantRange()
 	{
 		VkPushConstantRange pushConstant{};
-		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstant.offset		= sizeof(glm::mat4) * 0;
 		pushConstant.size		= sizeof(glm::mat4) * 2;
 

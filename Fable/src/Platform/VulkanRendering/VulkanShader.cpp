@@ -99,9 +99,18 @@ namespace Fable
 		// UNIFORM BUFFERS
 		VkDeviceSize bufferSize = sizeof(m_GlobalUbo);
 
-		m_UniformBuffer = (VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_UniformBufferMemory));
+		m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		m_UniformBufferMemory.resize(MAX_FRAMES_IN_FLIGHT);
+		m_UniformBufferMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
-		vkMapMemory(m_Context->m_Device, m_UniformBufferMemory, 0, bufferSize, 0, &m_UniformBufferMapped);
+		for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			m_UniformBuffers[i] = (VulkanUtilities::createBuffer(m_Context->m_Device, m_Context->m_PhysicalDevice, bufferSize, 
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+				m_UniformBufferMemory[i]));
+
+			vkMapMemory(m_Context->m_Device, m_UniformBufferMemory[i], 0, bufferSize, 0, &m_UniformBufferMapped[i]);
+		}
 
 		// DESCRIPTOR POOLS
 		m_DescriptorPoolInfo = VulkanInitalizers::createDescriptorPool();
@@ -111,6 +120,25 @@ namespace Fable
 		}
 
 		m_DescriptorSets = VulkanInitalizers::allocDescriptorSet(m_Context->m_Device, m_DescriptorPool, m_DescriptorSetLayout, m_DescriptorSets);
+
+		for (int i = 0; i < 2; i++)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_UniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(m_GlobalUbo);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = m_DescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+
+			vkUpdateDescriptorSets(m_Context->m_Device, 1, &descriptorWrite, 0, nullptr);
+		}
 	}
 
 	void VulkanShader::LoadUniformBuffer(glm::mat4 projection, glm::mat4 view, glm::mat4 model)
@@ -119,22 +147,6 @@ namespace Fable
 		m_GlobalUbo.view		= view;
 		m_GlobalUbo.model		= model;
 
-		memcpy(m_UniformBufferMapped, &m_GlobalUbo, sizeof(m_GlobalUbo));
-
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer				= m_UniformBuffer;
-		bufferInfo.offset				= 0;
-		bufferInfo.range				= sizeof(m_GlobalUbo);
-
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType			= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet			= m_DescriptorSets[0];
-		descriptorWrite.dstBinding		= 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo		= &bufferInfo;
-
-		vkUpdateDescriptorSets(m_Context->m_Device, 1, &descriptorWrite, 0, nullptr);
+		memcpy(m_UniformBufferMapped[m_Context->m_CurrentFrame], &m_GlobalUbo, sizeof(m_GlobalUbo));
 	}
 }

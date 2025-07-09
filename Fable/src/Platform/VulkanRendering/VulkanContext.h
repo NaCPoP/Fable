@@ -87,10 +87,10 @@ namespace Fable
 		/*
 		* COMMAND POOLS AND QUEUES
 		*/
-		VkQueue m_GraphicsQueue;
-		VkQueue m_PresentQueue;
+		VkQueue						m_GraphicsQueue;
+		VkQueue						m_PresentQueue;
 
-		VkCommandPool	m_CommandPool;
+		VkCommandPool				m_CommandPool;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
 		/*
 		* RENDER PASSES
@@ -106,8 +106,8 @@ namespace Fable
 		/*
 		* SYNC OBJECTS
 		*/
-		VkSemaphore m_PresentSemaphore, m_RenderSemaphore;
-		VkFence		m_RenderFence;
+		std::vector<VkSemaphore>	m_PresentSemaphore, m_RenderSemaphore;
+		std::vector<VkFence>		m_RenderFence;
 		/*
 		* UNIFORM BUFFER
 		*/

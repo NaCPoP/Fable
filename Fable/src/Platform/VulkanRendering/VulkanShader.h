@@ -42,9 +42,9 @@ namespace Fable
 		// UNIFORM BUFFERS
 		Fable::RendererAPI::global_ubo	m_GlobalUbo;
 
-		VkBuffer						m_UniformBuffer;
-		VkDeviceMemory					m_UniformBufferMemory;
-		void*							m_UniformBufferMapped;
+		std::vector<VkBuffer>			m_UniformBuffers;
+		std::vector<VkDeviceMemory>		m_UniformBufferMemory;
+		std::vector<void*>				m_UniformBufferMapped;
 	};
 }
 

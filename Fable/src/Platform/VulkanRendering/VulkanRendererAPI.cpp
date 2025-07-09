@@ -23,20 +23,23 @@ namespace Fable
 
 	void VulkanRendererAPI::BeginRender()
 	{
-		vkWaitForFences(m_Context->m_Device, 1, &m_Context->m_RenderFence, VK_TRUE, UINT64_MAX);
-
-		if (vkAcquireNextImageKHR(m_Context->m_Device, m_Context->m_Swapchain, UINT64_MAX, m_Context->m_PresentSemaphore, VK_NULL_HANDLE, &m_Context->m_ImageIndex) != VK_SUCCESS)
+		vkWaitForFences(m_Context->m_Device, 1, &m_Context->m_RenderFence[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+		
+		
+		if (vkAcquireNextImageKHR(m_Context->m_Device, m_Context->m_Swapchain, UINT64_MAX, m_Context->m_PresentSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to aquire swapchain image!");
 		}
 
-		vkResetFences(m_Context->m_Device, 1, &m_Context->m_RenderFence);
+		m_Context->m_ImageIndex = m_ImageIndex;
+
+		vkResetFences(m_Context->m_Device, 1, &m_Context->m_RenderFence[m_CurrentFrame]);
 		vkResetCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], 0);
 
 		VulkanWrapper::BeginCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
 		VulkanWrapper::BeginRenderPass(m_Context->m_CommandBuffers[m_CurrentFrame], m_Context->m_RenderPass, m_Context->m_SwapchainExtent,
-									   m_Context->m_FrameBuffers[m_Context->m_ImageIndex], m_ClearColor);
+									   m_Context->m_FrameBuffers[m_ImageIndex], m_ClearColor);
 	}
 
 	void VulkanRendererAPI::EndRender()
@@ -50,16 +53,16 @@ namespace Fable
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.waitSemaphoreCount	= 1;
-		submitInfo.pWaitSemaphores		= &m_Context->m_PresentSemaphore;
+		submitInfo.pWaitSemaphores		= &m_Context->m_PresentSemaphore[m_CurrentFrame];
 		submitInfo.pWaitDstStageMask	= waitStages;
 		submitInfo.commandBufferCount	= 1;
 		submitInfo.pCommandBuffers		= &m_Context->m_CommandBuffers[m_CurrentFrame];
 
-		VkSemaphore signalSemaphores[]	= { m_Context->m_RenderSemaphore };
+		VkSemaphore signalSemaphores[]	= { m_Context->m_RenderSemaphore[m_CurrentFrame] };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores	= signalSemaphores;
 
-		if (vkQueueSubmit(m_Context->m_GraphicsQueue, 1, &submitInfo, m_Context->m_RenderFence) != VK_SUCCESS)
+		if (vkQueueSubmit(m_Context->m_GraphicsQueue, 1, &submitInfo, m_Context->m_RenderFence[m_CurrentFrame]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to submit draw command to buffer!");
 		}
@@ -72,7 +75,7 @@ namespace Fable
 		VkSwapchainKHR swapchains[]		= { m_Context->m_Swapchain };
 		presentInfo.swapchainCount		= 1;
 		presentInfo.pSwapchains			= swapchains;
-		presentInfo.pImageIndices		= &m_Context->m_ImageIndex;
+		presentInfo.pImageIndices		= &m_ImageIndex;
 		presentInfo.pResults			= nullptr;
 
 		if (vkQueuePresentKHR(m_Context->m_PresentQueue, &presentInfo) != VK_SUCCESS)

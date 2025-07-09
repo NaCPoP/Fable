@@ -102,13 +102,13 @@ namespace Fable
 
 	void VulkanContext::SwapBuffers()
 	{
-		vkWaitForFences(m_Device, 1, &m_RenderFence, VK_TRUE, UINT64_MAX);
+		vkWaitForFences(m_Device, 1, &m_RenderFence[0], VK_TRUE, UINT64_MAX);
 
-		if (vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_PresentSemaphore, VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
+		if (vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_PresentSemaphore[0], VK_NULL_HANDLE, &m_ImageIndex) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to aquire swapchain image!");
 		}
-		vkResetFences(m_Device, 1, &m_RenderFence);
+		vkResetFences(m_Device, 1, &m_RenderFence[0]);
 
 		vkResetCommandBuffer(m_CommandBuffers[0], 0);
 	}
@@ -269,6 +269,10 @@ namespace Fable
 
 	void VulkanContext::createSyncStructures()
 	{
+		m_PresentSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+		m_RenderSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
+		m_RenderFence.resize(MAX_FRAMES_IN_FLIGHT);
+
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -276,9 +280,10 @@ namespace Fable
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_PresentSemaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderSemaphore) != VK_SUCCESS ||
-			vkCreateFence(m_Device, &fenceInfo, nullptr, &m_RenderFence) != VK_SUCCESS)
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_PresentSemaphore[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderSemaphore[i]) != VK_SUCCESS ||
+			vkCreateFence(m_Device, &fenceInfo, nullptr, &m_RenderFence[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create synchronization objects!");
 		}
