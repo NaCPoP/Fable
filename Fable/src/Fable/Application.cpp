@@ -82,6 +82,8 @@ namespace Fable
 
 			ImGui::Render();
 
+
+
 			Renderer::BeginScene(m_Context.get());
 
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VulkanContext*>(m_Context.get())->getCmdBuffer());
