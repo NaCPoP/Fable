@@ -485,55 +485,54 @@ namespace Fable
 		pool_info.poolSizeCount = std::size(pool_sizes);
 		pool_info.pPoolSizes = pool_sizes;
 
-		VkDescriptorPool imguiPool;
-		if (vkCreateDescriptorPool(m_Device, &pool_info, nullptr, &imguiPool) != VK_SUCCESS) 
+		if (vkCreateDescriptorPool(m_Device, &pool_info, nullptr, &m_ImguiPool) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor set!");
 		}
 
 
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
-		ImGui::StyleColorsDark();
-
-		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		}
-
-		Application& app = Application::Get();
-		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-
-		ImGui_ImplGlfw_InitForVulkan(window, true);
-
-		ImGui_ImplVulkan_InitInfo m_ImGuiInfo = {};
-		m_ImGuiInfo.Instance = m_Instance;
-		m_ImGuiInfo.PhysicalDevice = m_PhysicalDevice;
-		m_ImGuiInfo.Device = m_Device;
-		m_ImGuiInfo.Queue = m_GraphicsQueue;
-		m_ImGuiInfo.DescriptorPool = imguiPool;
-		m_ImGuiInfo.Subpass = 0;
-		m_ImGuiInfo.MinImageCount = 2;
-		m_ImGuiInfo.ImageCount = 2;
-		m_ImGuiInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		m_ImGuiInfo.Allocator = NULL;
-		m_ImGuiInfo.CheckVkResultFn = check_vk_result;
-
-		ImGui_ImplVulkan_Init(&m_ImGuiInfo, m_RenderPass);
-
-
-		VkCommandBuffer cmd = VulkanUtilities::beginSingleTimeCommands(m_CommandPool, m_Device);
-		ImGui_ImplVulkan_CreateFontsTexture(cmd);
-		VulkanUtilities::endSingleTimeCommands(cmd, m_CommandPool, m_Device, m_GraphicsQueue);
-
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		//IMGUI_CHECKVERSION();
+		//ImGui::CreateContext();
+		//ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		//io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		//
+		//ImGui::StyleColorsDark();
+		//
+		//ImGuiStyle& style = ImGui::GetStyle();
+		//if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		//{
+		//	style.WindowRounding = 0.0f;
+		//	style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		//}
+		//
+		//Application& app = Application::Get();
+		//GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+		//
+		//ImGui_ImplGlfw_InitForVulkan(window, true);
+		//
+		//ImGui_ImplVulkan_InitInfo m_ImGuiInfo = {};
+		//m_ImGuiInfo.Instance = m_Instance;
+		//m_ImGuiInfo.PhysicalDevice = m_PhysicalDevice;
+		//m_ImGuiInfo.Device = m_Device;
+		//m_ImGuiInfo.Queue = m_GraphicsQueue;
+		//m_ImGuiInfo.DescriptorPool = imguiPool;
+		//m_ImGuiInfo.Subpass = 0;
+		//m_ImGuiInfo.MinImageCount = 2;
+		//m_ImGuiInfo.ImageCount = 2;
+		//m_ImGuiInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		//m_ImGuiInfo.Allocator = NULL;
+		//m_ImGuiInfo.CheckVkResultFn = check_vk_result;
+		//
+		//ImGui_ImplVulkan_Init(&m_ImGuiInfo, m_RenderPass);
+		//
+		//
+		//VkCommandBuffer cmd = VulkanUtilities::beginSingleTimeCommands(m_CommandPool, m_Device);
+		//ImGui_ImplVulkan_CreateFontsTexture(cmd);
+		//VulkanUtilities::endSingleTimeCommands(cmd, m_CommandPool, m_Device, m_GraphicsQueue);
+		//
+		//ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
 	void VulkanContext::recreateSwapchain(uint32_t width, uint32_t height)

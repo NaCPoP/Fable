@@ -33,13 +33,14 @@ namespace Fable
 
 		m_Context->m_ImageIndex = m_ImageIndex;
 
-		vkResetFences(m_Context->m_Device, 1, &m_Context->m_RenderFence[m_CurrentFrame]);
-		vkResetCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], 0);
+		//vkResetCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], 0);
 
 		VulkanWrapper::BeginCommandBuffer(m_Context->m_CommandBuffers[m_CurrentFrame], VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
 		VulkanWrapper::BeginRenderPass(m_Context->m_CommandBuffers[m_CurrentFrame], m_Context->m_RenderPass, m_Context->m_SwapchainExtent,
 									   m_Context->m_FrameBuffers[m_ImageIndex], m_ClearColor);
+
+		vkResetFences(m_Context->m_Device, 1, &m_Context->m_RenderFence[m_CurrentFrame]);
 	}
 
 	void VulkanRendererAPI::EndRender()

@@ -19,12 +19,6 @@
 #include <vulkan/vulkan_core.h>
 #include <Fable/Window.h>
 
-//TODO: TEMP
-#include "../../../vendor/imgui/imgui.h"
-#include "../../../vendor/imgui/backends/imgui_impl_glfw.h"
-#include "../../../vendor/imgui/backends/imgui_impl_vulkan.h"
-#include "Fable/Application.h"
-
 struct GLFWwindow;
 
 namespace Fable
@@ -51,6 +45,7 @@ namespace Fable
 		friend class VulkanIndexBuffer;
 		friend class VulkanShader;
 		friend class VulkanRendererAPI;
+		friend class ImGuiLayer;
 
 	public:
 		VulkanContext(Window* window, RendererSettings settings);
@@ -143,7 +138,7 @@ namespace Fable
 
 		// TODO: Move to seperate class
 		void InitImgui();
-
+		VkDescriptorPool m_ImguiPool;
 
 		// RESIZE WINDOW
 		void recreateSwapchain(uint32_t width, uint32_t height);

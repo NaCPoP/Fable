@@ -158,6 +158,7 @@
     <ClInclude Include="src\Fable\Events\Events.h" />
     <ClInclude Include="src\Fable\Events\KeyEvents.h" />
     <ClInclude Include="src\Fable\Events\MouseEvents.h" />
+    <ClInclude Include="src\Fable\ImGui\ImGuiLayer.h" />
     <ClInclude Include="src\Fable\Input.h" />
     <ClInclude Include="src\Fable\Layer.h" />
     <ClInclude Include="src\Fable\LayerStack.h" />
@@ -183,6 +184,8 @@
   <ItemGroup>
     <ClCompile Include="src\Fable\Application.cpp" />
     <ClCompile Include="src\Fable\Camera.cpp" />
+    <ClCompile Include="src\Fable\ImGui\ImGuiBuild.cpp" />
+    <ClCompile Include="src\Fable\ImGui\ImGuiLayer.cpp" />
     <ClCompile Include="src\Fable\Layer.cpp" />
     <ClCompile Include="src\Fable\LayerStack.cpp" />
     <ClCompile Include="src\Fable\Renderer\Buffer.cpp" />

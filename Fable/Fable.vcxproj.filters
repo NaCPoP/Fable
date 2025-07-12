@@ -7,6 +7,9 @@
     <Filter Include="Fable\Events">
       <UniqueIdentifier>{63DE48F5-4F41-D899-F8C6-1050E408A41C}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fable\ImGui">
+      <UniqueIdentifier>{C9D3EFFF-3589-68F5-BE7D-62CC2A325FF9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Fable\Renderer">
       <UniqueIdentifier>{E511F561-D1DF-E867-BA73-598EA6E0C4CC}</UniqueIdentifier>
     </Filter>
@@ -48,6 +51,9 @@
     </ClInclude>
     <ClInclude Include="src\Fable\Events\MouseEvents.h">
       <Filter>Fable\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fable\ImGui\ImGuiLayer.h">
+      <Filter>Fable\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Fable\Input.h">
       <Filter>Fable</Filter>
@@ -117,6 +123,12 @@
     </ClCompile>
     <ClCompile Include="src\Fable\Camera.cpp">
       <Filter>Fable</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fable\ImGui\ImGuiBuild.cpp">
+      <Filter>Fable\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fable\ImGui\ImGuiLayer.cpp">
+      <Filter>Fable\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Fable\Layer.cpp">
       <Filter>Fable</Filter>

@@ -30,6 +30,9 @@ namespace Fable
 
 		RenderCommand::SetContext(m_Context.get());
 
+		m_ImGuiLayer = new ImGuiLayer();
+		PushOverlay(m_ImGuiLayer);
+
 		glm::vec3 vertices[4]
 		{
 			{-0.5f, -0.5f, 0.0f},
@@ -67,37 +70,19 @@ namespace Fable
 
 		while (m_Running)
 		{
-			ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-
-			ImGui::NewFrame();
-
-			//imgui commands
-			bool show = true;
-			ImGui::ShowDemoWindow(&show);
-
-			ImGuiIO& io = ImGui::GetIO();
-			Application& app = Application::Get();
-			io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
-
-			ImGui::Render();
-
-
-
 			Renderer::BeginScene(m_Context.get());
 
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VulkanContext*>(m_Context.get())->getCmdBuffer());
 			m_Shader->Bind();
 			m_Shader->LoadUniformBuffer(m_Camera.GetProjectionMatrix(), m_Camera.GetViewMatrix(), model);
 			Renderer::Submit(m_VertexBuffer.get(), m_IndexBuffer.get());
 			
-			if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				GLFWwindow* backup_current_context = glfwGetCurrentContext();
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
-				glfwMakeContextCurrent(backup_current_context);
-			}
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate();
+
+			m_ImGuiLayer->Begin();
+			for (Layer* layer : m_LayerStack)
+				layer->OnImGuiRender();
+			m_ImGuiLayer->End();
 
 			Renderer::EndScene();
 
@@ -106,7 +91,7 @@ namespace Fable
 				z += 0.001;
 				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
-			else if (Input::IsKeyPressed(GLFW_KEY_S))
+			if (Input::IsKeyPressed(GLFW_KEY_S))
 			{
 				z -= 0.001;
 				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
@@ -116,7 +101,7 @@ namespace Fable
 				x -= 0.001;
 				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
 			}
-			else if (Input::IsKeyPressed(GLFW_KEY_D))
+			if (Input::IsKeyPressed(GLFW_KEY_D))
 			{
 				x += 0.001;
 				m_Camera.SetPostition({ x, 0.0f, -10.0f + z });
@@ -138,6 +123,18 @@ namespace Fable
 			if (event.m_Handled)
 				break;
 		}
+	}
+
+	void Application::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+		layer->OnAttach();
+	}
+
+	void Application::PushOverlay(Layer* overlay)
+	{
+		m_LayerStack.PushOverlay(overlay);
+		overlay->OnAttach();
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& event)
